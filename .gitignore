@@ -20,7 +20,11 @@ __pycache__/
 *.pyc
 *.pyo
 
+# Scripts & local tools
+scripts/
+
 # OS metadata
+
 .DS_Store
 Thumbs.db
 Desktop.ini
