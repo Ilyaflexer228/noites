@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Наши планы на Новый год 🎄 | Совместная заметка</title>
+  
+  <!-- Apple Web App meta tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Наши планы" />
+  <meta name="theme-color" content="#fbfbfd" id="meta-theme-color" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Верхняя панель навигации в стиле iOS -->
+  <header class="ios-nav-header">
+    <div class="nav-left">
+      <div class="nav-back-button" title="Все папки">
+        <svg class="ios-back-icon" viewBox="0 0 12 20" width="12" height="20">
+          <path d="M10 2L2 10L10 18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="nav-folder-name">Заметки</span>
+      </div>
+    </div>
+
+    <!-- Индикатор сетевой синхронизации -->
+    <div class="nav-center">
+      <div id="sync-status-pill" class="sync-status-pill status-connecting">
+        <span id="sync-status-dot" class="status-dot"></span>
+        <span id="sync-status-text">Подключение…</span>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <!-- Аватары участников онлайн -->
+      <div id="active-peers-container" class="active-peers-container" title="Друзья онлайн"></div>
+
+      <!-- Кнопка «Поделиться» -->
+      <button id="share-btn" class="nav-btn icon-btn" title="Поделиться заметкой" aria-label="Поделиться">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+          <polyline points="16 6 12 2 8 6"/>
+          <line x1="12" y1="2" x2="12" y2="15"/>
+        </svg>
+      </button>
+
+      <!-- Переключатель темы (светлая/тёмная) -->
+      <button id="theme-toggle-btn" class="nav-btn icon-btn" title="Переключить тему" aria-label="Тема">
+        <span id="theme-icon">🌙</span>
+      </button>
+
+      <!-- Профиль текущего пользователя -->
+      <button id="user-profile-btn" class="user-profile-btn" title="Настройки профиля">
+        <span class="user-emoji">😎</span>
+        <span class="user-name">Профиль</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Панель инструментов форматирования (Toolbar) -->
+  <aside class="ios-format-toolbar" id="format-toolbar" aria-label="Панель форматирования">
+    <div class="toolbar-scroll-container">
+      <div class="toolbar-group">
+        <button id="tb-h1" class="tb-btn" title="Крупный заголовок">H1</button>
+        <button id="tb-h2" class="tb-btn" title="Подзаголовок">H2</button>
+        <button id="tb-text" class="tb-btn" title="Обычный текст">Aa</button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <button id="tb-bold" class="tb-btn" title="Жирный шрифт (Cmd+B)"><b>B</b></button>
+        <button id="tb-italic" class="tb-btn" title="Курсив (Cmd+I)"><i>I</i></button>
+        <button id="tb-strike" class="tb-btn" title="Зачёркнутый"><s>S</s></button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <!-- Чек-лист: главный инструмент для совместной подготовки праздника -->
+        <button id="tb-task" class="tb-btn tb-btn-accent" title="Чек-лист (задача с галочкой)">
+          <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+          <span>Чек-лист</span>
+        </button>
+        <button id="tb-bullet" class="tb-btn" title="Маркированный список">• Список</button>
+        <button id="tb-number" class="tb-btn" title="Нумерованный список">1. Список</button>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <div class="toolbar-group">
+        <button id="tb-undo" class="tb-btn icon-btn" title="Отменить (Cmd+Z)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+        </button>
+        <button id="tb-redo" class="tb-btn icon-btn" title="Повторить (Cmd+Shift+Z)">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+        </button>
+
+        <!-- Экспорт -->
+        <div class="export-dropdown-wrapper">
+          <button id="tb-export" class="tb-btn icon-btn" title="Экспорт заметки">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
+          <div id="export-dropdown-menu" class="export-dropdown-menu">
+            <button id="export-md" class="export-menu-item">
+              <span class="export-icon">📝</span>
+              <span>Экспорт в Markdown (.md)</span>
+            </button>
+            <button id="export-html" class="export-menu-item">
+              <span class="export-icon">🌐</span>
+              <span>Экспорт в HTML (.html)</span>
+            </button>
+            <button id="export-txt" class="export-menu-item">
+              <span class="export-icon">📄</span>
+              <span>Экспорт в текст (.txt)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Основная рабочая область заметки -->
+  <main class="note-main-viewport">
+    <article class="apple-note-paper">
+      <!-- Дата и время заметки (Apple Notes Subtitle) -->
+      <header class="note-paper-header">
+        <time id="note-meta-date" class="note-meta-date">15 ноября 2026 г., 23:50</time>
+      </header>
+
+      <!-- Контейнер для отображения удалённых курсоров друзей -->
+      <div id="cursor-container" class="cursor-container"></div>
+
+      <!-- Сам редактируемый документ -->
+      <div id="editor" class="apple-notes-editor" contenteditable="true" spellcheck="true" role="textbox"></div>
+    </article>
+  </main>
+
+  <!-- Модальное окно: Профиль пользователя (Имя и аватар) -->
+  <div id="profile-modal" class="ios-modal-backdrop">
+    <div class="ios-modal-card">
+      <div class="ios-modal-handle"></div>
+      <div class="ios-modal-header">
+        <div class="modal-festive-badge">🎄 Новый год 2027</div>
+        <h2 class="ios-modal-title">Как вас зовут?</h2>
+        <p class="ios-modal-subtitle">Друзья увидят ваше имя и эмодзи возле правок и цветного курсора в реальном времени.</p>
+      </div>
+
+      <div class="ios-modal-body">
+        <div class="ios-input-group">
+          <label for="profile-name-input" class="ios-input-label">Ваше имя</label>
+          <input type="text" id="profile-name-input" class="ios-text-input" placeholder="Например: Илья, Дима, Саша" autocomplete="name" maxlength="30" />
+        </div>
+
+        <div class="ios-emoji-section">
+          <div class="ios-input-label">Выберите ваш эмодзи</div>
+          <div id="emoji-grid" class="emoji-grid"></div>
+
+          <div class="custom-emoji-wrapper">
+            <span class="custom-emoji-desc">Или введите свой:</span>
+            <input type="text" id="custom-emoji-input" class="custom-emoji-input" placeholder="✨" maxlength="4" />
+          </div>
+        </div>
+      </div>
+
+      <div class="ios-modal-footer">
+        <button id="profile-save-btn" class="ios-btn-primary">Войти в заметку</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно: «Поделиться заметкой» -->
+  <div id="share-modal" class="ios-modal-backdrop">
+    <div class="ios-modal-card">
+      <div class="ios-modal-handle"></div>
+      <div class="ios-modal-header">
+        <h2 class="ios-modal-title">Поделиться с друзьями</h2>
+        <p class="ios-modal-subtitle">Отправьте эту ссылку друзьям. Все, кто откроет её, смогут одновременно дополнять ваши новогодние планы.</p>
+      </div>
+
+      <div class="ios-modal-body">
+        <div class="share-link-box">
+          <input type="text" id="share-link-input" class="share-link-input" readonly />
+        </div>
+        <p class="share-security-note">🔒 Ссылка содержит защищённый ключ доступа к заметке. Посторонние не смогут угадать или просмотреть документ.</p>
+      </div>
+
+      <div class="ios-modal-footer dual-buttons">
+        <button id="copy-share-link-btn" class="ios-btn-primary">Копировать ссылку</button>
+        <button id="share-modal-close-btn" class="ios-btn-secondary">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Всплывающий тост (iOS Toast) -->
+  <div id="apple-toast" class="apple-toast"></div>
+
+  <!-- Скрипт приложения -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# Blueprint для бесплатного развёртывания WebSocket-сервера на Render.com
+services:
+  - type: web
+    name: our-plans-crdt-server
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: INVITE_SECRET
+        generateValue: false
+        value: ny2027-friends
+      - key: DATA_DIR
+        value: ./data
