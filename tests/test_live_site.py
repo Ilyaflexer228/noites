@@ -78,6 +78,25 @@ def test_live():
         assert "Наши планы на Новый год" not in reloaded_new, "Шаблон вернулся вместо нового текста!"
         print(f"  ✓ После повторного F5 сохранился исключительно новый текст: '{new_text}'")
 
+        # 6. Проверяем работу клавиши Enter на опубликованном сайте
+        print("  ... Проверяем работу Enter на опубликованном сайте ...")
+        tab.focus_editor()
+        tab.press_enter()
+        second_line = f"Вторая строка на GitHub Pages {secrets.token_hex(2)}"
+        tab.type_text(second_line)
+        time.sleep(0.4)
+
+        blocks_live = tab.eval('Array.from(document.querySelectorAll("#editor [data-crdt-id]")).map(el => el.innerText.trim())')
+        assert len(blocks_live) >= 2, f"Enter должен был создать новый блок, получено: {len(blocks_live)}"
+        assert second_line in blocks_live[-1]
+        print(f"  ✓ Enter успешно создал новый абзац на опубликованном сайте: '{second_line}'")
+
+        # 7. Перезагрузка F5 и проверка сохранения обеих строк
+        tab.reload()
+        reloaded_live = tab.get_text_content()
+        assert new_text in reloaded_live and second_line in reloaded_live, "Строки потерялись после F5 на опубликованном сайте!"
+        print("  ✓ Обе строки и переносы сохранились после F5 на опубликованном сайте!")
+
         tab.close()
         print("\n" + "=" * 70)
         print("🎉 ТЕСТ НА ОПУБЛИКОВАННОМ САЙТЕ GITHUB PAGES УСПЕШНО ПРОЙДЕН 100%!")

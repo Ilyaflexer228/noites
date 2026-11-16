@@ -269,6 +269,17 @@ class BrowserTab:
         })
         time.sleep(0.2)
 
+    def press_enter(self, is_shift=False):
+        # Нажатие клавиши Enter через CDP
+        modifiers = 8 if is_shift else 0
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "rawKeyDown", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "modifiers": modifiers
+        })
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "keyUp", "key": "Enter", "code": "Enter", "windowsVirtualKeyCode": 13, "modifiers": modifiers
+        })
+        time.sleep(0.2)
+
     def cut_selection(self):
         # Нажатие Ctrl+X через CDP
         self.ws.call("Input.dispatchKeyEvent", {
@@ -344,8 +355,12 @@ class BrowserController:
             "--disable-translate",
             "--disable-default-apps",
             "--disable-popup-blocking",
-            "about:blank"
         ]
+        proxy = os.environ.get('AG_LS_PROXY') or os.environ.get('HTTPS_PROXY') or os.environ.get('HTTP_PROXY')
+        if proxy:
+            cmd.append(f"--proxy-server={proxy}")
+            cmd.append("--proxy-bypass-list=127.0.0.1;localhost")
+        cmd.append("about:blank")
         self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
         deadline = time.time() + 15
