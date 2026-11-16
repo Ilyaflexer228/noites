@@ -178,7 +178,7 @@ class BrowserTab:
         time.sleep(0.4)
         for _ in range(50):
             try:
-                ready = self.eval("document.readyState === 'complete' && !!window.appleNotesApp && !!window.appleNotesApp.crdtDoc")
+                ready = self.eval("document.readyState === 'complete' && !!window.appleNotesApp && !!window.appleNotesApp.editor")
                 if ready:
                     time.sleep(0.2)
                     return True
@@ -365,8 +365,8 @@ class BrowserController:
         with urllib.request.urlopen(req) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             tab = BrowserTab(data["id"], data["webSocketDebuggerUrl"])
-            tab.wait_for("document.readyState === 'complete' && !!window.appleNotesApp && !!window.appleNotesApp.crdtDoc", timeout=12)
-            time.sleep(0.2)
+            tab.wait_for("document.readyState === 'complete' && !!window.appleNotesApp && !!window.appleNotesApp.editor", timeout=12)
+            time.sleep(0.3)
             return tab
 
     def stop(self):
@@ -385,6 +385,12 @@ class BrowserController:
         except Exception:
             pass
 
+def get_free_port():
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('127.0.0.1', 0))
+        return s.getsockname()[1]
+
 def run_tests():
     print("=" * 75)
     print("🚀 ЗАПУСК ПОЛНОЦЕННОГО КОМПЛЕКСА РЕАЛЬНЫХ ТЕСТОВ РЕДАКТОРА (1, 2, 3, 4, 5)")
@@ -393,13 +399,16 @@ def run_tests():
     browser_exe = find_browser()
     print(f"Используемый браузер: {browser_exe}")
 
+    http_port = get_free_port()
+    cdp_port = get_free_port()
+
     web_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     http_proc = subprocess.Popen([
-        sys.executable, "-m", "http.server", str(HTTP_PORT), "--directory", web_dir
+        sys.executable, "-m", "http.server", str(http_port), "--directory", web_dir
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    print(f"Статический веб-сервер запущен: http://127.0.0.1:{HTTP_PORT}")
+    print(f"Статический веб-сервер запущен: http://127.0.0.1:{http_port}")
 
-    browser = BrowserController(browser_exe, CDP_PORT)
+    browser = BrowserController(browser_exe, cdp_port)
     browser.start()
     print("Headless-браузер успешно запущен по протоколу CDP\n")
 
@@ -409,9 +418,10 @@ def run_tests():
         # =================================================================
         print("▶ [ТЕСТ №1]: Полная очистка (Ctrl+A -> Backspace -> F5 x 5)")
         doc_id_1 = f"test-clear-{secrets.token_hex(4)}"
-        tab1 = browser.open_tab(f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_1}")
+        tab1 = browser.open_tab(f"http://127.0.0.1:{http_port}/index.html?doc={doc_id_1}")
         
         # 1. Убеждаемся, что исходный текст загрузился
+        tab1.wait_for("document.getElementById('editor')?.innerText?.includes('Наши планы на Новый год')", timeout=12)
         initial_text = tab1.get_text_content()
         assert "Наши планы на Новый год" in initial_text, "Исходный шаблон не загрузился"
         print("  ✓ Редактор загружен с исходным текстом")
@@ -461,7 +471,7 @@ def run_tests():
         # =================================================================
         print("▶ [ТЕСТ №2]: Удаление и новый ввод (Очистка -> ввод текста -> F5)")
         doc_id_2 = f"test-replace-{secrets.token_hex(4)}"
-        tab2 = browser.open_tab(f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_2}")
+        tab2 = browser.open_tab(f"http://127.0.0.1:{http_port}/index.html?doc={doc_id_2}")
 
         # Удаляем всю заметку
         tab2.select_all()
@@ -493,7 +503,7 @@ def run_tests():
         # =================================================================
         print("▶ [ТЕСТ №3]: Частичное удаление (5 строк -> выделение 3 -> Backspace -> F5)")
         doc_id_3 = f"test-partial-{secrets.token_hex(4)}"
-        tab3 = browser.open_tab(f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_3}")
+        tab3 = browser.open_tab(f"http://127.0.0.1:{http_port}/index.html?doc={doc_id_3}")
 
         # Очищаем и создаём 5 строк
         tab3.select_all()
@@ -553,7 +563,7 @@ def run_tests():
         # =================================================================
         print("▶ [ТЕСТ №4]: Вырезание текста через Ctrl+X -> F5")
         doc_id_4 = f"test-cut-{secrets.token_hex(4)}"
-        tab4 = browser.open_tab(f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_4}")
+        tab4 = browser.open_tab(f"http://127.0.0.1:{http_port}/index.html?doc={doc_id_4}")
 
         # Выделяем верхние блоки и вырезаем через Ctrl+X
         tab4.select_block_range(0, 2)
@@ -574,7 +584,7 @@ def run_tests():
         # =================================================================
         print("▶ [ТЕСТ №5]: Пустая заметка не восстанавливает новогодний шаблон")
         doc_id_5 = f"test-empty-restore-{secrets.token_hex(4)}"
-        tab5 = browser.open_tab(f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_5}")
+        tab5 = browser.open_tab(f"http://127.0.0.1:{http_port}/index.html?doc={doc_id_5}")
 
         # Удаляем абсолютно все блоки через Ctrl+A + Delete
         tab5.select_all()
