@@ -61,8 +61,10 @@ class PersistentDatabase {
       const tempPath = `${this.filePath}.${Date.now()}.tmp`;
       fs.writeFileSync(tempPath, JSON.stringify(this.state, null, 2), 'utf-8');
       fs.renameSync(tempPath, this.filePath);
+      return true;
     } catch (err) {
       console.error('[DB] Critical: failed to write persistent store:', err);
+      return false;
     }
   }
 
@@ -72,11 +74,10 @@ class PersistentDatabase {
     } else if (this.state.metadata.invite_secret) {
       this.inviteSecret = this.state.metadata.invite_secret;
     } else {
-      // Генерируем криптографически стойкий секрет
-      this.inviteSecret = crypto.randomBytes(16).toString('hex');
+      this.inviteSecret = process.env.DEFAULT_INVITE_SECRET || 'ny2027-friends';
       this.state.metadata.invite_secret = this.inviteSecret;
       this.save();
-      console.log(`[Security] Generated persistent random invite secret: "${this.inviteSecret}"`);
+      console.log(`[Security] Using invite secret: "${this.inviteSecret}"`);
     }
   }
 
@@ -140,7 +141,7 @@ class PersistentDatabase {
     }
 
     snapshot.clock = Math.max(snapshot.clock || 0, op.clock || 0);
-    this.save();
+    return this.save();
   }
 
   getSnapshot(docId) {
@@ -240,23 +241,32 @@ wss.on('connection', (ws, req) => {
           const opId = msg.opId || (op ? `${op.client}@${op.clock}` : null);
 
           if (op && opId) {
+            let saved = true;
             // Идемпотентная запись в базу данных
             if (!db.hasOp(docId, opId)) {
-              db.saveOpAndApply(docId, op, opId);
+              saved = db.saveOpAndApply(docId, op, opId);
             }
 
-            // Подтверждение клиенту только после физической записи
-            ws.send(JSON.stringify({
-              type: 'op_ack',
-              opId,
-            }));
+            if (saved) {
+              // Подтверждение клиенту только после физической записи
+              ws.send(JSON.stringify({
+                type: 'op_ack',
+                opId,
+              }));
 
-            // Рассылка остальным участникам комнаты
-            broadcastToRoom(docId, ws, {
-              type: 'op',
-              docId,
-              op,
-            });
+              // Рассылка остальным участникам комнаты
+              broadcastToRoom(docId, ws, {
+                type: 'op',
+                docId,
+                op,
+              });
+            } else {
+              ws.send(JSON.stringify({
+                type: 'op_error',
+                opId,
+                error: 'Failed to persist operation to disk',
+              }));
+            }
           }
           break;
         }

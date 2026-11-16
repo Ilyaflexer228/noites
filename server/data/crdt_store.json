@@ -1,0 +1,13 @@
+{
+  "documents": {},
+  "operations": {
+    "our-plans-ny-2027": [
+      {
+        "client": "client_ilya",
+        "clock": 1,
+        "type": "insert",
+        "content": "Купить хлопушки 🎉"
+      }
+    ]
+  }
+}

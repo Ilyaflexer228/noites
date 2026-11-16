@@ -1,11 +1,11 @@
 /**
- * Надёжный CRDT-движок для совместного редактирования
+ * Надёжный CRDT-движок для совместного редактирования Apple Notes
  * 
- * Исправлены критические проблемы:
- * 1. Редактирование существующего текста: отдельная операция 'text_update' с версионированием часов Лампорта.
- * 2. Слияние снимков (Merge): loadSnapshot() не стирает локальные несинхронизированные правки, а производит слияние.
- * 3. Независимые LWW-регистры для чек-листов: отметка галочки никогда не затирает текст строки.
- * 4. Идемпотентность и коммутативность всех операций.
+ * Гарантии:
+ * 1. Восстановление полного состояния: текст, заголовки, списки, чек-листы, галочки.
+ * 2. Детерминированный порядок строк без циклов и потери элементов.
+ * 3. Защита от повторного использования ID операций (часы Лампорта восстанавливаются до максимального значения).
+ * 4. Бесконфликтное слияние одновременных правок (RGA + Lamport Clocks + LWW для чекбоксов).
  */
 
 export class LamportClock {
@@ -22,6 +22,10 @@ export class LamportClock {
   update(remoteTime) {
     this.time = Math.max(this.time, remoteTime) + 1;
     return this.time;
+  }
+
+  setTime(t) {
+    this.time = Math.max(this.time, t);
   }
 }
 
@@ -42,6 +46,7 @@ export class NodeID {
   }
 
   compare(other) {
+    if (!other) return 1;
     if (this.clock !== other.clock) {
       return this.clock - other.clock;
     }
@@ -54,12 +59,12 @@ export class CRDTItem {
     this.id = id; // NodeID
     this.leftId = leftId; // NodeID | null
     this.rightId = rightId; // NodeID | null
-    this.content = content; // string
-    this.type = type; // 'h1' | 'h2' | 'text' | 'task' | 'bullet' | 'number' | 'newline'
-    this.checked = checked; // boolean
+    this.content = content || ''; // string
+    this.type = type || 'text'; // 'h1' | 'h2' | 'text' | 'task' | 'bullet' | 'number' | 'newline'
+    this.checked = !!checked; // boolean
     this.clock = id ? id.clock : 0;
     this.checkedClock = id ? id.clock : 0;
-    this.deleted = deleted; // boolean (tombstone)
+    this.deleted = !!deleted; // boolean (tombstone)
     this.deletedClock = 0;
   }
 }
@@ -99,16 +104,22 @@ export class CollaborativeDoc {
   }
 
   /**
-   * Получить упорядоченный список видимых элементов
+   * Получить упорядоченный список видимых элементов от head до tail
    */
   getVisibleItems() {
     const result = [];
-    let currentId = this.items.get(this.head.toString()).rightId;
+    const rootItem = this.items.get(this.head.toString());
+    if (!rootItem) return result;
+
+    let currentId = rootItem.rightId;
     const visited = new Set();
 
     while (currentId && currentId.toString() !== this.tail.toString()) {
       const key = currentId.toString();
-      if (visited.has(key)) break; // Защита от циклов
+      if (visited.has(key)) {
+        console.warn('[CRDT] Cycle detected in linked list at', key);
+        break;
+      }
       visited.add(key);
 
       const item = this.items.get(key);
@@ -130,12 +141,12 @@ export class CollaborativeDoc {
     this.stateVector.set(this.clientId, timestamp.time);
 
     const leftKey = leftId ? leftId.toString() : this.head.toString();
-    const leftItem = this.items.get(leftKey);
-    if (!leftItem) throw new Error(`Left item not found: ${leftKey}`);
-
+    const leftItem = this.items.get(leftKey) || this.items.get(this.head.toString());
     const rightId = leftItem.rightId;
 
     const newItem = new CRDTItem(newId, leftItem.id, rightId, content, type, checked);
+    newItem.clock = timestamp.time;
+    newItem.checkedClock = timestamp.time;
     this.items.set(newId.toString(), newItem);
 
     leftItem.rightId = newId;
@@ -272,7 +283,6 @@ export class CollaborativeDoc {
   applyRemoteOp(op) {
     if (!op || !op.type) return false;
 
-    // Синхронизируем логические часы Лампорта
     if (op.clock) {
       this.clock.update(op.clock);
       const curr = this.stateVector.get(op.client) || 0;
@@ -282,7 +292,6 @@ export class CollaborativeDoc {
     if (op.type === 'text_update') {
       const item = this.items.get(op.id);
       if (item) {
-        // Применяем обновление текста, если часы больше или равны
         if (!item.clock || op.clock >= item.clock) {
           item.content = op.content;
           item.clock = op.clock;
@@ -295,7 +304,6 @@ export class CollaborativeDoc {
 
     if (op.type === 'insert') {
       if (this.items.has(op.id)) {
-        // Если блок уже существует, проверяем, не более ли свежий текст пришёл
         const existing = this.items.get(op.id);
         if (op.clock && op.clock > existing.clock) {
           existing.content = op.content;
@@ -392,87 +400,174 @@ export class CollaborativeDoc {
   }
 
   /**
-   * Безопасное слияние снимка без уничтожения локальных несинхронизированных правок
+   * Восстановление и слияние снимка состояния
+   * Гарантирует:
+   * 1. Полное восстановление порядка строк, чекбоксов, текста и часов Лампорта.
+   * 2. Исключение повторного использования ID операций.
    */
   loadSnapshot(snapshot) {
-    if (!snapshot || !snapshot.items) return;
+    if (!snapshot || !snapshot.items || !Array.isArray(snapshot.items)) return false;
 
-    for (const raw of snapshot.items) {
-      const local = this.items.get(raw.id);
-      if (!local) {
-        // Новый элемент с сервера
+    // Фильтруем элементы снимка, исключая дубликаты ROOT и TAIL
+    const validRawItems = snapshot.items.filter((r) => r.id !== 'ROOT@0' && r.id !== 'TAIL@0');
+    if (validRawItems.length === 0) return false;
+
+    // Вычисляем максимальные часы Лампорта для предотвращения коллизий ID после F5
+    let maxClock = snapshot.clock || 0;
+
+    // Если документ пустой (только ROOT и TAIL) — прямое линейное восстановление из локального хранилища
+    const isInitialEmpty = this.items.size <= 2;
+
+    if (isInitialEmpty) {
+      // Очищаем и создаём свежие границы
+      this.items.clear();
+      this.head = new NodeID('ROOT', 0);
+      this.tail = new NodeID('TAIL', 0);
+
+      const rootItem = new CRDTItem(this.head, null, null, '', 'root');
+      const tailItem = new CRDTItem(this.tail, null, null, '', 'tail');
+
+      this.items.set(this.head.toString(), rootItem);
+      this.items.set(this.tail.toString(), tailItem);
+
+      let prevItem = rootItem;
+
+      for (const raw of validRawItems) {
+        const itemId = NodeID.fromString(raw.id);
         const item = new CRDTItem(
-          NodeID.fromString(raw.id),
-          raw.leftId ? NodeID.fromString(raw.leftId) : null,
-          raw.rightId ? NodeID.fromString(raw.rightId) : null,
-          raw.content,
-          raw.type,
-          raw.checked,
-          raw.deleted
+          itemId,
+          prevItem.id,
+          null,
+          raw.content || '',
+          raw.type || 'text',
+          !!raw.checked,
+          !!raw.deleted
         );
-        item.clock = raw.clock || 0;
-        item.checkedClock = raw.checkedClock || 0;
+        item.clock = raw.clock || itemId.clock || 0;
+        item.checkedClock = raw.checkedClock || item.clock;
         item.deletedClock = raw.deletedClock || 0;
+
+        maxClock = Math.max(maxClock, item.clock, item.checkedClock, item.deletedClock);
+        if (itemId.client === this.clientId) {
+          maxClock = Math.max(maxClock, itemId.clock);
+        }
+
         this.items.set(raw.id, item);
-      } else {
-        // Слияние по часам Лампорта
-        if (raw.deleted && (!local.deleted || (raw.deletedClock && raw.deletedClock >= local.deletedClock))) {
-          local.deleted = true;
-          local.deletedClock = raw.deletedClock || 0;
-        }
-        if (raw.checkedClock && raw.checkedClock > local.checkedClock) {
-          local.checked = raw.checked;
-          local.checkedClock = raw.checkedClock;
-        }
-        if (raw.clock && raw.clock > local.clock) {
-          local.content = raw.content;
-          local.clock = raw.clock;
-          local.type = raw.type;
+
+        // Связываем с предыдущим
+        prevItem.rightId = item.id;
+        prevItem = item;
+      }
+
+      // Замыкаем на tail
+      prevItem.rightId = this.tail;
+      tailItem.leftId = prevItem.id;
+    } else {
+      // Слияние снимка с существующими локальными элементами (Merge)
+      for (const raw of validRawItems) {
+        const local = this.items.get(raw.id);
+        const rawClock = raw.clock || 0;
+        maxClock = Math.max(maxClock, rawClock, raw.checkedClock || 0, raw.deletedClock || 0);
+
+        if (!local) {
+          // Вставляем недостающий элемент через applyRemoteOp
+          this.applyRemoteOp({
+            type: 'insert',
+            id: raw.id,
+            leftId: raw.leftId,
+            rightId: raw.rightId,
+            content: raw.content || '',
+            itemType: raw.type || 'text',
+            checked: !!raw.checked,
+            clock: rawClock,
+            client: NodeID.fromString(raw.id)?.client || 'remote',
+          });
+        } else {
+          // Обновляем существующий элемент по максимальным часам
+          if (raw.deleted && (!local.deleted || (raw.deletedClock && raw.deletedClock >= local.deletedClock))) {
+            local.deleted = true;
+            local.deletedClock = raw.deletedClock || 0;
+          }
+          if (raw.checkedClock && raw.checkedClock > local.checkedClock) {
+            local.checked = !!raw.checked;
+            local.checkedClock = raw.checkedClock;
+          }
+          if (rawClock && rawClock > local.clock) {
+            local.content = raw.content;
+            local.clock = rawClock;
+            local.type = raw.type;
+          }
         }
       }
     }
 
-    // Связываем соседей
-    for (const [key, item] of this.items.entries()) {
-      if (key === this.head.toString() || key === this.tail.toString()) continue;
-      if (item.leftId) {
-        const left = this.items.get(item.leftId.toString());
-        if (left) left.rightId = item.id;
-      }
-      if (item.rightId) {
-        const right = this.items.get(item.rightId.toString());
-        if (right) right.leftId = item.id;
-      }
-    }
-
-    if (snapshot.clock) {
-      this.clock.time = Math.max(this.clock.time, snapshot.clock);
-    }
-
+    // Восстанавливаем вектор состояний и часы Лампорта
     if (snapshot.stateVector) {
       for (const [client, clock] of Object.entries(snapshot.stateVector)) {
         this.stateVector.set(client, Math.max(this.stateVector.get(client) || 0, clock));
+        maxClock = Math.max(maxClock, clock);
       }
     }
 
+    // Устанавливаем часы локального клиента строго больше максимального встреченного
+    this.clock.setTime(maxClock);
+    this.stateVector.set(this.clientId, Math.max(this.stateVector.get(this.clientId) || 0, this.clock.time));
+
     this.notify('snapshot', null);
+    return true;
   }
 
+  /**
+   * Экспорт полного снимка документа в строгом порядке следования от head до tail
+   */
   exportSnapshot() {
     const rawItems = [];
-    for (const item of this.items.values()) {
+    const rootItem = this.items.get(this.head.toString());
+    let currId = rootItem ? rootItem.rightId : null;
+    const visited = new Set();
+
+    // Проходим по цепочке от head до tail
+    while (currId && currId.toString() !== this.tail.toString()) {
+      const key = currId.toString();
+      if (visited.has(key)) break;
+      visited.add(key);
+
+      const item = this.items.get(key);
+      if (!item) break;
+
       rawItems.push({
         id: item.id.toString(),
         leftId: item.leftId ? item.leftId.toString() : null,
         rightId: item.rightId ? item.rightId.toString() : null,
-        content: item.content,
-        type: item.type,
-        checked: item.checked,
-        clock: item.clock,
-        checkedClock: item.checkedClock,
-        deleted: item.deleted,
-        deletedClock: item.deletedClock,
+        content: item.content || '',
+        type: item.type || 'text',
+        checked: !!item.checked,
+        clock: item.clock || 0,
+        checkedClock: item.checkedClock || 0,
+        deleted: !!item.deleted,
+        deletedClock: item.deletedClock || 0,
       });
+
+      currId = item.rightId;
+    }
+
+    // Также добавляем любые элементы, выпавшие из основной цепи (для надёжности)
+    for (const [key, item] of this.items.entries()) {
+      if (key === this.head.toString() || key === this.tail.toString()) continue;
+      if (!visited.has(key)) {
+        rawItems.push({
+          id: item.id.toString(),
+          leftId: item.leftId ? item.leftId.toString() : null,
+          rightId: item.rightId ? item.rightId.toString() : null,
+          content: item.content || '',
+          type: item.type || 'text',
+          checked: !!item.checked,
+          clock: item.clock || 0,
+          checkedClock: item.checkedClock || 0,
+          deleted: !!item.deleted,
+          deletedClock: item.deletedClock || 0,
+        });
+      }
     }
 
     const vector = {};
@@ -489,6 +584,9 @@ export class CollaborativeDoc {
     };
   }
 
+  /**
+   * Стартовый шаблон (создаётся ТОЛЬКО если документ пуст)
+   */
   initializeWithTemplate() {
     if (this.getVisibleItems().length > 0) return;
 

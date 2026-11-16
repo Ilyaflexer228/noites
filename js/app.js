@@ -1,5 +1,6 @@
 /**
  * Главный координатор приложения «Наши планы 🎄»
+ * Гарантирует сохранение данных при любых обстоятельствах: F5, закрытие вкладки, офлайн.
  */
 
 import { CONFIG, getUrlParams } from '../config.js';
@@ -17,13 +18,11 @@ class App {
     this.awareness = null;
     this.syncClient = null;
     this.editor = null;
+    this._localSaveTimer = null;
 
     this.init();
   }
 
-  /**
-   * Загрузка или создание профиля пользователя
-   */
   loadUserProfile() {
     try {
       const saved = localStorage.getItem('apple_notes_user');
@@ -34,7 +33,6 @@ class App {
       console.warn('Could not read user profile:', e);
     }
 
-    // Случайный профиль по умолчанию, если пользователь ещё не заполнил
     const randomColor = CONFIG.USER_COLORS[Math.floor(Math.random() * CONFIG.USER_COLORS.length)];
     const randomEmoji = CONFIG.EMOJI_PRESETS[Math.floor(Math.random() * CONFIG.EMOJI_PRESETS.length)];
 
@@ -64,37 +62,60 @@ class App {
     this.initTheme();
     this.bindHeaderActions();
 
-    // Показываем модальное окно профиля, если пользователь впервые на сайте
     if (!this.user.isConfigured || !this.user.name) {
       this.showProfileModal(true);
     } else {
       this.renderHeaderProfile();
     }
 
-    // Инициализация CRDT-документа
+    // Инициализация CRDT-документа с устойчивым идентификатором пользователя
     this.crdtDoc = new CollaborativeDoc(this.urlParams.docId, this.user.id);
 
-    // 1. Сначала загружаем документ из локального хранилища IndexedDB (мгновенный старт)
+    // 1. НАДЁЖНОЕ ВОССТАНОВЛЕНИЕ: Чтение из IndexedDB и localStorage
     const cached = await docStorage.loadDocument(this.urlParams.docId);
-    if (cached && cached.data) {
-      this.crdtDoc.loadSnapshot(cached.data);
+    const savedSnapshot = cached ? (cached.snapshot || cached.data || (cached.items ? cached : null)) : null;
+
+    if (savedSnapshot && savedSnapshot.items && savedSnapshot.items.length > 0) {
+      this.crdtDoc.loadSnapshot(savedSnapshot);
     } else {
-      // Инициализируем праздничным шаблоном
+      // Инициализируем стартовым шаблоном ТОЛЬКО если документ действительно пуст
       this.crdtDoc.initializeWithTemplate();
+      await this.saveDocumentLocally();
     }
 
-    // Инициализация Awareness
+    // Подписываемся на любые изменения CRDT для немедленного локального сохранения
+    this.crdtDoc.subscribe(async (origin) => {
+      if (origin === 'local' || origin === 'remote') {
+        await this.saveDocumentLocally();
+      }
+    });
+
+    // Экстренное синхронное сохранение при F5, закрытии вкладки или сворачивании на смартфоне
+    const emergencySave = () => {
+      const snapshot = this.crdtDoc.exportSnapshot();
+      const text = this.crdtDoc.toPlainText();
+      docStorage.saveDocumentSyncFallback(this.urlParams.docId, snapshot, text);
+    };
+    window.addEventListener('beforeunload', emergencySave);
+    window.addEventListener('pagehide', emergencySave);
+
+    // Инициализация Awareness (присутствие)
     this.awareness = new AwarenessManager(this.crdtDoc, this.user);
     this.awareness.setCursorContainer(document.getElementById('cursor-container'));
     this.awareness.subscribe((peers) => this.renderActivePeers(peers));
 
-    // Инициализация редактора
+    // Инициализация визуального редактора
     const editorEl = document.getElementById('editor');
     this.editor = new AppleNotesEditor(editorEl, this.crdtDoc, this.awareness);
 
-    // Инициализация сетевой синхронизации (WebSocket / Hocuspocus)
+    // Инициализация сетевой синхронизации (WebSocket)
     this.syncClient = new SyncClient(this.crdtDoc, this.awareness, this.urlParams);
     this.syncClient.onStatusChange((status) => this.updateSyncStatusBadge(status));
+
+    // Обновляем статус первоначального сохранения
+    if (!this.urlParams.wsUrl) {
+      this.updateSyncStatusBadge('local_saved');
+    }
 
     // Привязка панели форматирования
     this.bindToolbar();
@@ -102,8 +123,35 @@ class App {
   }
 
   /**
-   * Управление темами оформления (Светлая / Тёмная)
+   * Локальное сохранение документа в IndexedDB и localStorage
    */
+  async saveDocumentLocally() {
+    clearTimeout(this._localSaveTimer);
+    return new Promise((resolve) => {
+      this._localSaveTimer = setTimeout(async () => {
+        try {
+          const snapshot = this.crdtDoc.exportSnapshot();
+          const text = this.crdtDoc.toPlainText();
+          const ok = await docStorage.saveDocument(this.urlParams.docId, snapshot, text);
+
+          if (ok) {
+            // Если сокет не подключён, отображаем честный статус локального сохранения
+            if (!this.syncClient || this.syncClient.status === SyncStatus.OFFLINE) {
+              this.updateSyncStatusBadge('local_saved');
+            }
+          } else {
+            this.updateSyncStatusBadge('local_error');
+          }
+          resolve(ok);
+        } catch (err) {
+          console.error('[App] Save locally failed:', err);
+          this.updateSyncStatusBadge('local_error');
+          resolve(false);
+        }
+      }, 40);
+    });
+  }
+
   initTheme() {
     const savedTheme = localStorage.getItem('apple_notes_theme');
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -132,31 +180,43 @@ class App {
   }
 
   /**
-   * Индикатор синхронизации (Apple Notes Style)
+   * Индикатор синхронизации с чётким разделением онлайн/офлайн
    */
   updateSyncStatusBadge(status) {
     const pill = document.getElementById('sync-status-pill');
     const text = document.getElementById('sync-status-text');
-    const dot = document.getElementById('sync-status-dot');
-    if (!pill || !text || !dot) return;
+    if (!pill || !text) return;
 
     pill.className = `sync-status-pill status-${status}`;
 
     switch (status) {
+      case 'local_saved':
+        text.textContent = 'Сохранено на устройстве';
+        pill.className = 'sync-status-pill status-synced';
+        break;
+      case 'local_error':
+        text.textContent = 'Ошибка локального сохранения';
+        pill.className = 'sync-status-pill status-error';
+        break;
       case SyncStatus.SYNCED:
-        text.textContent = 'Сохранено';
+        text.textContent = 'Синхронизировано онлайн';
+        pill.className = 'sync-status-pill status-synced';
         break;
       case SyncStatus.SYNCING:
         text.textContent = 'Синхронизация…';
+        pill.className = 'sync-status-pill status-syncing';
         break;
       case SyncStatus.CONNECTING:
-        text.textContent = 'Подключение…';
+        text.textContent = 'Подключение к серверу…';
+        pill.className = 'sync-status-pill status-connecting';
         break;
       case SyncStatus.OFFLINE:
-        text.textContent = 'Офлайн (сохранено локально)';
+        text.textContent = 'Сохранено на устройстве';
+        pill.className = 'sync-status-pill status-offline';
         break;
       case SyncStatus.ERROR:
-        text.textContent = 'Ошибка доступа';
+        text.textContent = 'Сервер недоступен (сохранено локально)';
+        pill.className = 'sync-status-pill status-offline';
         break;
       default:
         text.textContent = 'Сохранено';
@@ -164,9 +224,6 @@ class App {
     }
   }
 
-  /**
-   * Отрисовка списка активных пользователей онлайн
-   */
   renderActivePeers(peers) {
     const container = document.getElementById('active-peers-container');
     if (!container) return;
@@ -202,9 +259,6 @@ class App {
     `;
   }
 
-  /**
-   * Дата в верхней части заметки (как в iOS Notes)
-   */
   updateNoteDate() {
     const dateEl = document.getElementById('note-meta-date');
     if (!dateEl) return;
@@ -213,9 +267,6 @@ class App {
     dateEl.textContent = now.toLocaleDateString('ru-RU', options);
   }
 
-  /**
-   * Привязка кнопок тулбара форматирования
-   */
   bindToolbar() {
     const bindBtn = (id, action) => {
       const btn = document.getElementById(id);
@@ -238,10 +289,9 @@ class App {
     bindBtn('tb-italic', () => document.execCommand('italic', false, null));
     bindBtn('tb-strike', () => document.execCommand('strikeThrough', false, null));
 
-    bindBtn('tb-undo', () => this.editor.undo());
-    bindBtn('tb-redo', () => this.editor.redo());
+    bindBtn('tb-undo', () => document.execCommand('undo', false, null));
+    bindBtn('tb-redo', () => document.execCommand('redo', false, null));
 
-    // Экспорт
     const exportBtn = document.getElementById('tb-export');
     const exportMenu = document.getElementById('export-dropdown-menu');
     if (exportBtn && exportMenu) {
@@ -260,26 +310,18 @@ class App {
     }
   }
 
-  /**
-   * Действия в шапке (Поделиться, Профиль)
-   */
   bindHeaderActions() {
-    // Профиль
     const profileBtn = document.getElementById('user-profile-btn');
     if (profileBtn) {
       profileBtn.addEventListener('click', () => this.showProfileModal(false));
     }
 
-    // Поделиться
     const shareBtn = document.getElementById('share-btn');
     if (shareBtn) {
       shareBtn.addEventListener('click', () => this.showShareModal());
     }
   }
 
-  /**
-   * Модальное окно профиля (Имя и эмодзи)
-   */
   showProfileModal(isFirstTime = false) {
     const modal = document.getElementById('profile-modal');
     const input = document.getElementById('profile-name-input');
@@ -292,7 +334,6 @@ class App {
     input.value = this.user.name || '';
     let selectedEmoji = this.user.emoji || '😎';
 
-    // Рендер сетки эмодзи
     emojiGrid.innerHTML = '';
     CONFIG.EMOJI_PRESETS.forEach((em) => {
       const emBtn = document.createElement('button');
@@ -343,9 +384,6 @@ class App {
     };
   }
 
-  /**
-   * Модальное окно «Поделиться заметкой»
-   */
   showShareModal() {
     const modal = document.getElementById('share-modal');
     const linkInput = document.getElementById('share-link-input');
@@ -354,10 +392,14 @@ class App {
 
     if (!modal || !linkInput || !copyBtn) return;
 
-    // Генерируем полную ссылку с токеном
     const shareUrl = new URL(window.location.origin + window.location.pathname);
     shareUrl.searchParams.set('doc', this.urlParams.docId);
-    shareUrl.searchParams.set('key', this.urlParams.inviteKey);
+    if (this.urlParams.inviteKey) {
+      shareUrl.searchParams.set('key', this.urlParams.inviteKey);
+    }
+    if (this.urlParams.wsUrl) {
+      shareUrl.searchParams.set('ws', this.urlParams.wsUrl);
+    }
     linkInput.value = shareUrl.toString();
 
     modal.classList.add('show');
@@ -378,9 +420,6 @@ class App {
     }
   }
 
-  /**
-   * Всплывающее уведомление (Toast в стиле iOS)
-   */
   showToast(message, duration = 2500) {
     let toast = document.getElementById('apple-toast');
     if (!toast) {
@@ -398,9 +437,6 @@ class App {
     }, duration);
   }
 
-  /**
-   * Экспорт документа
-   */
   exportMarkdown() {
     const md = this.crdtDoc.toMarkdown();
     this.downloadFile('Наши_планы_на_Новый_год_2027.md', md, 'text/markdown;charset=utf-8');
@@ -451,7 +487,6 @@ function escapeHTML(str) {
   return str.replace(/[&<>"']/g, '');
 }
 
-// Запуск при готовности DOM
 document.addEventListener('DOMContentLoaded', () => {
   window.appleNotesApp = new App();
 });

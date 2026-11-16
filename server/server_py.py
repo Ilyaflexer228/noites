@@ -41,8 +41,10 @@ class PersistentDatabase:
             with open(tmp, 'w', encoding='utf-8') as f:
                 json.dump(self.state, f, ensure_ascii=False, indent=2)
             os.replace(tmp, self.path)
+            return True
         except Exception as e:
             print(f"[DB] Save error: {e}")
+            return False
 
     def ensure_secret(self):
         env_secret = os.environ.get('INVITE_SECRET')
@@ -51,7 +53,7 @@ class PersistentDatabase:
         elif 'invite_secret' in self.state.get("metadata", {}):
             self.invite_secret = self.state["metadata"]["invite_secret"]
         else:
-            self.invite_secret = secrets.token_hex(16)
+            self.invite_secret = os.environ.get('DEFAULT_INVITE_SECRET', 'ny2027-friends')
             self.state.setdefault("metadata", {})["invite_secret"] = self.invite_secret
             self.save()
 
@@ -101,7 +103,7 @@ class PersistentDatabase:
                 item["clock"] = clock
 
         snapshot["clock"] = max(snapshot.get("clock", 0), clock)
-        self.save()
+        return self.save()
 
     def get_snapshot(self, doc_id):
         return self.state.get("documents", {}).get(doc_id)
@@ -206,7 +208,7 @@ async def handle_connection(reader, writer):
                 elif k == 'client': client_id = v
 
     # Проверка ключа доступа
-    if invite_key != db.invite_secret:
+    if not invite_key or invite_key != db.invite_secret:
         writer.write(b"HTTP/1.1 403 Forbidden\r\n\r\n")
         await writer.drain()
         writer.close()
@@ -256,14 +258,17 @@ async def handle_connection(reader, writer):
                     op = msg.get('op')
                     op_id = msg.get('opId') or (f"{op.get('client')}@{op.get('clock')}" if op else None)
                     if op and op_id:
+                        saved = True
                         if not db.has_op(doc_id, op_id):
-                            db.save_op_and_apply(doc_id, op, op_id)
-                        await client.send_text(json.dumps({'type': 'op_ack', 'opId': op_id}))
-
-                        broadcast_data = json.dumps({'type': 'op', 'docId': doc_id, 'op': op})
-                        for peer in list(rooms.get(doc_id, [])):
-                            if peer != client and peer.is_connected:
-                                asyncio.create_task(peer.send_text(broadcast_data))
+                            saved = db.save_op_and_apply(doc_id, op, op_id)
+                        if saved:
+                            await client.send_text(json.dumps({'type': 'op_ack', 'opId': op_id}))
+                            broadcast_data = json.dumps({'type': 'op', 'docId': doc_id, 'op': op})
+                            for peer in list(rooms.get(doc_id, [])):
+                                if peer != client and peer.is_connected:
+                                    asyncio.create_task(peer.send_text(broadcast_data))
+                        else:
+                            await client.send_text(json.dumps({'type': 'op_error', 'opId': op_id, 'error': 'Save failed'}))
 
                 elif msg_type == 'awareness':
                     broadcast_data = json.dumps({

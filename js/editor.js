@@ -40,6 +40,23 @@ export class AppleNotesEditor {
         this.renderFromCRDT();
       } else if (origin === 'remote') {
         this.applyRemoteUpdateToDOM(op);
+      } else if (origin === 'local' && op) {
+        if (op.type === 'insert') {
+          const existing = this.container.querySelector(`[data-crdt-id="${op.id}"]`);
+          if (!existing) {
+            this.applyRemoteUpdateToDOM(op);
+          }
+        } else if (op.type === 'toggle_task') {
+          const row = this.container.querySelector(`[data-crdt-id="${op.id}"]`);
+          if (row) {
+            const cb = row.querySelector('.apple-checkbox-input');
+            if (cb && cb.checked !== !!op.checked) {
+              cb.checked = !!op.checked;
+            }
+            if (op.checked) row.classList.add('checked');
+            else row.classList.remove('checked');
+          }
+        }
       }
     });
   }
