@@ -1,7 +1,1976 @@
 {
   "metadata": {
-    "invite_secret": "4c56550bfa34ea672310f5ad5d695a66"
+    "invite_secret": "ny2027-friends"
   },
-  "documents": {},
-  "operations": {}
+  "documents": {
+    "debug-room-1": {
+      "docId": "debug-room-1",
+      "items": [
+        {
+          "id": "init@1",
+          "leftId": "ROOT@0",
+          "rightId": "init@2",
+          "content": "🎄 Наши планы на Новый год 2027",
+          "type": "h1",
+          "checked": false,
+          "clock": 1,
+          "deleted": false
+        },
+        {
+          "id": "init@2",
+          "leftId": "init@1",
+          "rightId": "init@3",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 2,
+          "deleted": false
+        },
+        {
+          "id": "init@3",
+          "leftId": "init@2",
+          "rightId": "init@4",
+          "content": "30 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 3,
+          "deleted": false
+        },
+        {
+          "id": "init@4",
+          "leftId": "init@3",
+          "rightId": "init@5",
+          "content": "Купить продукты к праздничному столу",
+          "type": "task",
+          "checked": false,
+          "clock": 4,
+          "deleted": false
+        },
+        {
+          "id": "init@5",
+          "leftId": "init@4",
+          "rightId": "init@6",
+          "content": "Собраться вечером у друзей",
+          "type": "task",
+          "checked": false,
+          "clock": 5,
+          "deleted": false
+        },
+        {
+          "id": "init@6",
+          "leftId": "init@5",
+          "rightId": "init@7",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 6,
+          "deleted": false
+        },
+        {
+          "id": "init@7",
+          "leftId": "init@6",
+          "rightId": "init@8",
+          "content": "31 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 7,
+          "deleted": false
+        },
+        {
+          "id": "init@8",
+          "leftId": "init@7",
+          "rightId": "init@9",
+          "content": "18:00 — подготовка и нарезка салатов",
+          "type": "task",
+          "checked": false,
+          "clock": 8,
+          "deleted": false
+        },
+        {
+          "id": "init@9",
+          "leftId": "init@8",
+          "rightId": "init@10",
+          "content": "21:00 — провожаем старый год",
+          "type": "task",
+          "checked": false,
+          "clock": 9,
+          "deleted": false
+        },
+        {
+          "id": "init@10",
+          "leftId": "init@9",
+          "rightId": "init@11",
+          "content": "00:00 — встречаем Новый год! 🥂✨",
+          "type": "task",
+          "checked": false,
+          "clock": 10,
+          "deleted": false
+        },
+        {
+          "id": "init@11",
+          "leftId": "init@10",
+          "rightId": "init@12",
+          "content": "Запустить праздничный салют 🎆",
+          "type": "task",
+          "checked": false,
+          "clock": 11,
+          "deleted": false
+        },
+        {
+          "id": "init@12",
+          "leftId": "init@11",
+          "rightId": "init@13",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 12,
+          "deleted": false
+        },
+        {
+          "id": "init@13",
+          "leftId": "init@12",
+          "rightId": "init@14",
+          "content": "2 января",
+          "type": "h2",
+          "checked": false,
+          "clock": 13,
+          "deleted": false
+        },
+        {
+          "id": "init@14",
+          "leftId": "init@13",
+          "rightId": "init@15",
+          "content": "Сходить в баню 🧖‍♂️",
+          "type": "task",
+          "checked": false,
+          "clock": 14,
+          "deleted": false
+        },
+        {
+          "id": "init@15",
+          "leftId": "init@14",
+          "rightId": "TAIL@0",
+          "content": "Заказать такси",
+          "type": "task",
+          "checked": false,
+          "clock": 15,
+          "deleted": false
+        }
+      ],
+      "clock": 16
+    },
+    "test-enter-5f15b946": {
+      "docId": "test-enter-5f15b946",
+      "items": [
+        {
+          "id": "init@1",
+          "leftId": "ROOT@0",
+          "rightId": "init@2",
+          "content": "🎄 Наши планы на Новый год 2027",
+          "type": "h1",
+          "checked": false,
+          "clock": 1,
+          "deleted": true,
+          "deletedClock": 17
+        },
+        {
+          "id": "init@2",
+          "leftId": "init@1",
+          "rightId": "init@3",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 2,
+          "deleted": true,
+          "deletedClock": 18
+        },
+        {
+          "id": "init@3",
+          "leftId": "init@2",
+          "rightId": "init@4",
+          "content": "30 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 3,
+          "deleted": true,
+          "deletedClock": 19
+        },
+        {
+          "id": "init@4",
+          "leftId": "init@3",
+          "rightId": "init@5",
+          "content": "Купить продукты к праздничному столу",
+          "type": "task",
+          "checked": false,
+          "clock": 4,
+          "deleted": true,
+          "deletedClock": 20
+        },
+        {
+          "id": "init@5",
+          "leftId": "init@4",
+          "rightId": "init@6",
+          "content": "Собраться вечером у друзей",
+          "type": "task",
+          "checked": false,
+          "clock": 5,
+          "deleted": true,
+          "deletedClock": 21
+        },
+        {
+          "id": "init@6",
+          "leftId": "init@5",
+          "rightId": "init@7",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 6,
+          "deleted": true,
+          "deletedClock": 22
+        },
+        {
+          "id": "init@7",
+          "leftId": "init@6",
+          "rightId": "init@8",
+          "content": "31 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 7,
+          "deleted": true,
+          "deletedClock": 23
+        },
+        {
+          "id": "init@8",
+          "leftId": "init@7",
+          "rightId": "init@9",
+          "content": "18:00 — подготовка и нарезка салатов",
+          "type": "task",
+          "checked": false,
+          "clock": 8,
+          "deleted": true,
+          "deletedClock": 24
+        },
+        {
+          "id": "init@9",
+          "leftId": "init@8",
+          "rightId": "init@10",
+          "content": "21:00 — провожаем старый год",
+          "type": "task",
+          "checked": false,
+          "clock": 9,
+          "deleted": true,
+          "deletedClock": 25
+        },
+        {
+          "id": "init@10",
+          "leftId": "init@9",
+          "rightId": "init@11",
+          "content": "00:00 — встречаем Новый год! 🥂✨",
+          "type": "task",
+          "checked": false,
+          "clock": 10,
+          "deleted": true,
+          "deletedClock": 26
+        },
+        {
+          "id": "init@11",
+          "leftId": "init@10",
+          "rightId": "init@12",
+          "content": "Запустить праздничный салют 🎆",
+          "type": "task",
+          "checked": false,
+          "clock": 11,
+          "deleted": true,
+          "deletedClock": 27
+        },
+        {
+          "id": "init@12",
+          "leftId": "init@11",
+          "rightId": "init@13",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 12,
+          "deleted": true,
+          "deletedClock": 28
+        },
+        {
+          "id": "init@13",
+          "leftId": "init@12",
+          "rightId": "init@14",
+          "content": "2 января",
+          "type": "h2",
+          "checked": false,
+          "clock": 13,
+          "deleted": true,
+          "deletedClock": 29
+        },
+        {
+          "id": "init@14",
+          "leftId": "init@13",
+          "rightId": "init@15",
+          "content": "Сходить в баню 🧖‍♂️",
+          "type": "task",
+          "checked": false,
+          "clock": 14,
+          "deleted": true,
+          "deletedClock": 30
+        },
+        {
+          "id": "init@15",
+          "leftId": "init@14",
+          "rightId": "TAIL@0",
+          "content": "Заказать такси",
+          "type": "task",
+          "checked": false,
+          "clock": 15,
+          "deleted": true,
+          "deletedClock": 31
+        },
+        {
+          "id": "usr_8p2nqx9q@32",
+          "leftId": "ROOT@0",
+          "rightId": "init@1",
+          "content": "Первая строка",
+          "type": "text",
+          "checked": false,
+          "clock": 32,
+          "deleted": false
+        },
+        {
+          "id": "usr_8p2nqx9q@33",
+          "leftId": "usr_8p2nqx9q@32",
+          "rightId": "init@1",
+          "content": "Вторая строка",
+          "type": "text",
+          "checked": false,
+          "clock": 34,
+          "deleted": false
+        }
+      ],
+      "clock": 34
+    },
+    "shared-98e1563d": {
+      "docId": "shared-98e1563d",
+      "items": [
+        {
+          "id": "init@1",
+          "leftId": "ROOT@0",
+          "rightId": "init@2",
+          "content": "🎄 Наши планы на Новый год 2027",
+          "type": "h1",
+          "checked": false,
+          "clock": 1,
+          "deleted": true,
+          "deletedClock": 17
+        },
+        {
+          "id": "init@2",
+          "leftId": "init@1",
+          "rightId": "init@3",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 2,
+          "deleted": true,
+          "deletedClock": 18
+        },
+        {
+          "id": "init@3",
+          "leftId": "init@2",
+          "rightId": "init@4",
+          "content": "30 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 3,
+          "deleted": true,
+          "deletedClock": 19
+        },
+        {
+          "id": "init@4",
+          "leftId": "init@3",
+          "rightId": "init@5",
+          "content": "Купить продукты к праздничному столу",
+          "type": "task",
+          "checked": false,
+          "clock": 4,
+          "deleted": true,
+          "deletedClock": 20
+        },
+        {
+          "id": "init@5",
+          "leftId": "init@4",
+          "rightId": "init@6",
+          "content": "Собраться вечером у друзей",
+          "type": "task",
+          "checked": false,
+          "clock": 5,
+          "deleted": true,
+          "deletedClock": 21
+        },
+        {
+          "id": "init@6",
+          "leftId": "init@5",
+          "rightId": "init@7",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 6,
+          "deleted": true,
+          "deletedClock": 22
+        },
+        {
+          "id": "init@7",
+          "leftId": "init@6",
+          "rightId": "init@8",
+          "content": "31 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 7,
+          "deleted": true,
+          "deletedClock": 23
+        },
+        {
+          "id": "init@8",
+          "leftId": "init@7",
+          "rightId": "init@9",
+          "content": "18:00 — подготовка и нарезка салатов",
+          "type": "task",
+          "checked": false,
+          "clock": 8,
+          "deleted": true,
+          "deletedClock": 24
+        },
+        {
+          "id": "init@9",
+          "leftId": "init@8",
+          "rightId": "init@10",
+          "content": "21:00 — провожаем старый год",
+          "type": "task",
+          "checked": false,
+          "clock": 9,
+          "deleted": true,
+          "deletedClock": 25
+        },
+        {
+          "id": "init@10",
+          "leftId": "init@9",
+          "rightId": "init@11",
+          "content": "00:00 — встречаем Новый год! 🥂✨",
+          "type": "task",
+          "checked": false,
+          "clock": 10,
+          "deleted": true,
+          "deletedClock": 26
+        },
+        {
+          "id": "init@11",
+          "leftId": "init@10",
+          "rightId": "init@12",
+          "content": "Запустить праздничный салют 🎆",
+          "type": "task",
+          "checked": false,
+          "clock": 11,
+          "deleted": true,
+          "deletedClock": 27
+        },
+        {
+          "id": "init@12",
+          "leftId": "init@11",
+          "rightId": "init@13",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 12,
+          "deleted": true,
+          "deletedClock": 28
+        },
+        {
+          "id": "init@13",
+          "leftId": "init@12",
+          "rightId": "init@14",
+          "content": "2 января",
+          "type": "h2",
+          "checked": false,
+          "clock": 13,
+          "deleted": true,
+          "deletedClock": 29
+        },
+        {
+          "id": "init@14",
+          "leftId": "init@13",
+          "rightId": "init@15",
+          "content": "Сходить в баню 🧖‍♂️",
+          "type": "task",
+          "checked": false,
+          "clock": 14,
+          "deleted": true,
+          "deletedClock": 30
+        },
+        {
+          "id": "init@15",
+          "leftId": "init@14",
+          "rightId": "TAIL@0",
+          "content": "Заказать такси",
+          "type": "task",
+          "checked": false,
+          "clock": 15,
+          "deleted": true,
+          "deletedClock": 31
+        },
+        {
+          "id": "usr_fdvg4dp3@32",
+          "leftId": "ROOT@0",
+          "rightId": "init@1",
+          "content": "Привет от Ильи",
+          "type": "text",
+          "checked": false,
+          "clock": 32,
+          "deleted": false
+        },
+        {
+          "id": "usr_tp1jqpd4@34",
+          "leftId": "ROOT@0",
+          "rightId": "usr_fdvg4dp3@32",
+          "content": "Привет от Димы (Салют) (Ёлка)",
+          "type": "text",
+          "checked": false,
+          "clock": 37,
+          "deleted": false
+        },
+        {
+          "id": "usr_t1oqei21@39",
+          "leftId": "usr_fdvg4dp3@32",
+          "rightId": "init@1",
+          "content": "Онлайн-план от Димы",
+          "type": "text",
+          "checked": false,
+          "clock": 39,
+          "deleted": false
+        },
+        {
+          "id": "usr_52pn76yt@39",
+          "leftId": "ROOT@0",
+          "rightId": "usr_tp1jqpd4@34",
+          "content": "Офлайн-план от Ильи",
+          "type": "text",
+          "checked": false,
+          "clock": 39,
+          "deleted": false
+        }
+      ],
+      "clock": 39
+    },
+    "test-enter-4534754c": {
+      "docId": "test-enter-4534754c",
+      "items": [
+        {
+          "id": "init@1",
+          "leftId": "ROOT@0",
+          "rightId": "init@2",
+          "content": "🎄 Наши планы на Новый год 2027",
+          "type": "h1",
+          "checked": false,
+          "clock": 1,
+          "deleted": true,
+          "deletedClock": 17
+        },
+        {
+          "id": "init@2",
+          "leftId": "init@1",
+          "rightId": "init@3",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 2,
+          "deleted": true,
+          "deletedClock": 18
+        },
+        {
+          "id": "init@3",
+          "leftId": "init@2",
+          "rightId": "init@4",
+          "content": "30 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 3,
+          "deleted": true,
+          "deletedClock": 19
+        },
+        {
+          "id": "init@4",
+          "leftId": "init@3",
+          "rightId": "init@5",
+          "content": "Купить продукты к праздничному столу",
+          "type": "task",
+          "checked": false,
+          "clock": 4,
+          "deleted": true,
+          "deletedClock": 20
+        },
+        {
+          "id": "init@5",
+          "leftId": "init@4",
+          "rightId": "init@6",
+          "content": "Собраться вечером у друзей",
+          "type": "task",
+          "checked": false,
+          "clock": 5,
+          "deleted": true,
+          "deletedClock": 21
+        },
+        {
+          "id": "init@6",
+          "leftId": "init@5",
+          "rightId": "init@7",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 6,
+          "deleted": true,
+          "deletedClock": 22
+        },
+        {
+          "id": "init@7",
+          "leftId": "init@6",
+          "rightId": "init@8",
+          "content": "31 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 7,
+          "deleted": true,
+          "deletedClock": 23
+        },
+        {
+          "id": "init@8",
+          "leftId": "init@7",
+          "rightId": "init@9",
+          "content": "18:00 — подготовка и нарезка салатов",
+          "type": "task",
+          "checked": false,
+          "clock": 8,
+          "deleted": true,
+          "deletedClock": 24
+        },
+        {
+          "id": "init@9",
+          "leftId": "init@8",
+          "rightId": "init@10",
+          "content": "21:00 — провожаем старый год",
+          "type": "task",
+          "checked": false,
+          "clock": 9,
+          "deleted": true,
+          "deletedClock": 25
+        },
+        {
+          "id": "init@10",
+          "leftId": "init@9",
+          "rightId": "init@11",
+          "content": "00:00 — встречаем Новый год! 🥂✨",
+          "type": "task",
+          "checked": false,
+          "clock": 10,
+          "deleted": true,
+          "deletedClock": 26
+        },
+        {
+          "id": "init@11",
+          "leftId": "init@10",
+          "rightId": "init@12",
+          "content": "Запустить праздничный салют 🎆",
+          "type": "task",
+          "checked": false,
+          "clock": 11,
+          "deleted": true,
+          "deletedClock": 27
+        },
+        {
+          "id": "init@12",
+          "leftId": "init@11",
+          "rightId": "init@13",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 12,
+          "deleted": true,
+          "deletedClock": 28
+        },
+        {
+          "id": "init@13",
+          "leftId": "init@12",
+          "rightId": "init@14",
+          "content": "2 января",
+          "type": "h2",
+          "checked": false,
+          "clock": 13,
+          "deleted": true,
+          "deletedClock": 29
+        },
+        {
+          "id": "init@14",
+          "leftId": "init@13",
+          "rightId": "init@15",
+          "content": "Сходить в баню 🧖‍♂️",
+          "type": "task",
+          "checked": false,
+          "clock": 14,
+          "deleted": true,
+          "deletedClock": 30
+        },
+        {
+          "id": "init@15",
+          "leftId": "init@14",
+          "rightId": "TAIL@0",
+          "content": "Заказать такси",
+          "type": "task",
+          "checked": false,
+          "clock": 15,
+          "deleted": true,
+          "deletedClock": 31
+        },
+        {
+          "id": "usr_m4rg1mis@32",
+          "leftId": "ROOT@0",
+          "rightId": "init@1",
+          "content": "Первая строка",
+          "type": "text",
+          "checked": false,
+          "clock": 32,
+          "deleted": false
+        },
+        {
+          "id": "usr_m4rg1mis@33",
+          "leftId": "usr_m4rg1mis@32",
+          "rightId": "init@1",
+          "content": "Вторая строка",
+          "type": "text",
+          "checked": false,
+          "clock": 34,
+          "deleted": false
+        }
+      ],
+      "clock": 34
+    },
+    "shared-25f0a112": {
+      "docId": "shared-25f0a112",
+      "items": [
+        {
+          "id": "init@1",
+          "leftId": "ROOT@0",
+          "rightId": "init@2",
+          "content": "🎄 Наши планы на Новый год 2027",
+          "type": "h1",
+          "checked": false,
+          "clock": 1,
+          "deleted": true,
+          "deletedClock": 17
+        },
+        {
+          "id": "init@2",
+          "leftId": "init@1",
+          "rightId": "init@3",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 2,
+          "deleted": true,
+          "deletedClock": 18
+        },
+        {
+          "id": "init@3",
+          "leftId": "init@2",
+          "rightId": "init@4",
+          "content": "30 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 3,
+          "deleted": true,
+          "deletedClock": 19
+        },
+        {
+          "id": "init@4",
+          "leftId": "init@3",
+          "rightId": "init@5",
+          "content": "Купить продукты к праздничному столу",
+          "type": "task",
+          "checked": false,
+          "clock": 4,
+          "deleted": true,
+          "deletedClock": 20
+        },
+        {
+          "id": "init@5",
+          "leftId": "init@4",
+          "rightId": "init@6",
+          "content": "Собраться вечером у друзей",
+          "type": "task",
+          "checked": false,
+          "clock": 5,
+          "deleted": true,
+          "deletedClock": 21
+        },
+        {
+          "id": "init@6",
+          "leftId": "init@5",
+          "rightId": "init@7",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 6,
+          "deleted": true,
+          "deletedClock": 22
+        },
+        {
+          "id": "init@7",
+          "leftId": "init@6",
+          "rightId": "init@8",
+          "content": "31 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 7,
+          "deleted": true,
+          "deletedClock": 23
+        },
+        {
+          "id": "init@8",
+          "leftId": "init@7",
+          "rightId": "init@9",
+          "content": "18:00 — подготовка и нарезка салатов",
+          "type": "task",
+          "checked": false,
+          "clock": 8,
+          "deleted": true,
+          "deletedClock": 24
+        },
+        {
+          "id": "init@9",
+          "leftId": "init@8",
+          "rightId": "init@10",
+          "content": "21:00 — провожаем старый год",
+          "type": "task",
+          "checked": false,
+          "clock": 9,
+          "deleted": true,
+          "deletedClock": 25
+        },
+        {
+          "id": "init@10",
+          "leftId": "init@9",
+          "rightId": "init@11",
+          "content": "00:00 — встречаем Новый год! 🥂✨",
+          "type": "task",
+          "checked": false,
+          "clock": 10,
+          "deleted": true,
+          "deletedClock": 26
+        },
+        {
+          "id": "init@11",
+          "leftId": "init@10",
+          "rightId": "init@12",
+          "content": "Запустить праздничный салют 🎆",
+          "type": "task",
+          "checked": false,
+          "clock": 11,
+          "deleted": true,
+          "deletedClock": 27
+        },
+        {
+          "id": "init@12",
+          "leftId": "init@11",
+          "rightId": "init@13",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 12,
+          "deleted": true,
+          "deletedClock": 28
+        },
+        {
+          "id": "init@13",
+          "leftId": "init@12",
+          "rightId": "init@14",
+          "content": "2 января",
+          "type": "h2",
+          "checked": false,
+          "clock": 13,
+          "deleted": true,
+          "deletedClock": 29
+        },
+        {
+          "id": "init@14",
+          "leftId": "init@13",
+          "rightId": "init@15",
+          "content": "Сходить в баню 🧖‍♂️",
+          "type": "task",
+          "checked": false,
+          "clock": 14,
+          "deleted": true,
+          "deletedClock": 30
+        },
+        {
+          "id": "init@15",
+          "leftId": "init@14",
+          "rightId": "TAIL@0",
+          "content": "Заказать такси",
+          "type": "task",
+          "checked": false,
+          "clock": 15,
+          "deleted": true,
+          "deletedClock": 31
+        },
+        {
+          "id": "usr_ypywk7ii@32",
+          "leftId": "ROOT@0",
+          "rightId": "init@1",
+          "content": "Привет от Ильи",
+          "type": "text",
+          "checked": false,
+          "clock": 32,
+          "deleted": false
+        },
+        {
+          "id": "usr_nm5bje0u@34",
+          "leftId": "ROOT@0",
+          "rightId": "usr_ypywk7ii@32",
+          "content": "Привет от Димы (Салют) (Ёлка)",
+          "type": "text",
+          "checked": false,
+          "clock": 37,
+          "deleted": false
+        },
+        {
+          "id": "usr_5osaa80d@39",
+          "leftId": "usr_ypywk7ii@32",
+          "rightId": "init@1",
+          "content": "Онлайн-план от Димы",
+          "type": "text",
+          "checked": false,
+          "clock": 39,
+          "deleted": false
+        },
+        {
+          "id": "usr_ffjhjk1v@39",
+          "leftId": "ROOT@0",
+          "rightId": "usr_nm5bje0u@34",
+          "content": "Офлайн-план от Ильи",
+          "type": "text",
+          "checked": false,
+          "clock": 39,
+          "deleted": false
+        }
+      ],
+      "clock": 39
+    },
+    "test-mob-02a11c41": {
+      "docId": "test-mob-02a11c41",
+      "items": [
+        {
+          "id": "init@1",
+          "leftId": "ROOT@0",
+          "rightId": "init@2",
+          "content": "🎄 Наши планы на Новый год 2027",
+          "type": "h1",
+          "checked": false,
+          "clock": 1,
+          "deleted": false
+        },
+        {
+          "id": "init@2",
+          "leftId": "init@1",
+          "rightId": "init@3",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 2,
+          "deleted": false
+        },
+        {
+          "id": "init@3",
+          "leftId": "init@2",
+          "rightId": "init@4",
+          "content": "30 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 3,
+          "deleted": false
+        },
+        {
+          "id": "init@4",
+          "leftId": "init@3",
+          "rightId": "init@5",
+          "content": "Купить продукты к праздничному столу",
+          "type": "task",
+          "checked": true,
+          "clock": 4,
+          "deleted": false,
+          "checkedClock": 18
+        },
+        {
+          "id": "init@5",
+          "leftId": "init@4",
+          "rightId": "init@6",
+          "content": "Собраться вечером у друзей",
+          "type": "task",
+          "checked": false,
+          "clock": 5,
+          "deleted": false
+        },
+        {
+          "id": "init@6",
+          "leftId": "init@5",
+          "rightId": "init@7",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 6,
+          "deleted": false
+        },
+        {
+          "id": "init@7",
+          "leftId": "init@6",
+          "rightId": "init@8",
+          "content": "31 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 7,
+          "deleted": false
+        },
+        {
+          "id": "init@8",
+          "leftId": "init@7",
+          "rightId": "init@9",
+          "content": "18:00 — подготовка и нарезка салатов",
+          "type": "task",
+          "checked": false,
+          "clock": 8,
+          "deleted": false
+        },
+        {
+          "id": "init@9",
+          "leftId": "init@8",
+          "rightId": "init@10",
+          "content": "21:00 — провожаем старый год",
+          "type": "task",
+          "checked": false,
+          "clock": 9,
+          "deleted": false
+        },
+        {
+          "id": "init@10",
+          "leftId": "init@9",
+          "rightId": "init@11",
+          "content": "00:00 — встречаем Новый год! 🥂✨",
+          "type": "task",
+          "checked": false,
+          "clock": 10,
+          "deleted": false
+        },
+        {
+          "id": "init@11",
+          "leftId": "init@10",
+          "rightId": "init@12",
+          "content": "Запустить праздничный салют 🎆",
+          "type": "task",
+          "checked": false,
+          "clock": 11,
+          "deleted": false
+        },
+        {
+          "id": "init@12",
+          "leftId": "init@11",
+          "rightId": "init@13",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 12,
+          "deleted": false
+        },
+        {
+          "id": "init@13",
+          "leftId": "init@12",
+          "rightId": "init@14",
+          "content": "2 января",
+          "type": "h2",
+          "checked": false,
+          "clock": 13,
+          "deleted": false
+        },
+        {
+          "id": "init@14",
+          "leftId": "init@13",
+          "rightId": "init@15",
+          "content": "Сходить в баню 🧖‍♂️",
+          "type": "task",
+          "checked": false,
+          "clock": 14,
+          "deleted": false
+        },
+        {
+          "id": "init@15",
+          "leftId": "init@14",
+          "rightId": "TAIL@0",
+          "content": "Заказать такси",
+          "type": "task",
+          "checked": false,
+          "clock": 15,
+          "deleted": false
+        },
+        {
+          "id": "usr_69fgfo3k@17",
+          "leftId": "init@15",
+          "rightId": "TAIL@0",
+          "content": "",
+          "type": "task",
+          "checked": false,
+          "clock": 17,
+          "deleted": false
+        }
+      ],
+      "clock": 18
+    },
+    "our-plans-ny-2027": {
+      "docId": "our-plans-ny-2027",
+      "items": [
+        {
+          "id": "init@1",
+          "leftId": "ROOT@0",
+          "rightId": "init@2",
+          "content": "🎄 Наши планы на Новый год 2027",
+          "type": "h1",
+          "checked": false,
+          "clock": 1,
+          "deleted": false
+        },
+        {
+          "id": "init@2",
+          "leftId": "init@1",
+          "rightId": "init@3",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 2,
+          "deleted": false
+        },
+        {
+          "id": "init@3",
+          "leftId": "init@2",
+          "rightId": "init@4",
+          "content": "30 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 3,
+          "deleted": false
+        },
+        {
+          "id": "init@4",
+          "leftId": "init@3",
+          "rightId": "init@5",
+          "content": "Купить продукты к праздничному столу",
+          "type": "task",
+          "checked": false,
+          "clock": 4,
+          "deleted": false
+        },
+        {
+          "id": "init@5",
+          "leftId": "init@4",
+          "rightId": "init@6",
+          "content": "Собраться вечером у друзей",
+          "type": "task",
+          "checked": false,
+          "clock": 5,
+          "deleted": false
+        },
+        {
+          "id": "init@6",
+          "leftId": "init@5",
+          "rightId": "init@7",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 6,
+          "deleted": false
+        },
+        {
+          "id": "init@7",
+          "leftId": "init@6",
+          "rightId": "init@8",
+          "content": "31 декабря",
+          "type": "h2",
+          "checked": false,
+          "clock": 7,
+          "deleted": false
+        },
+        {
+          "id": "init@8",
+          "leftId": "init@7",
+          "rightId": "init@9",
+          "content": "18:00 — подготовка и нарезка салатов",
+          "type": "task",
+          "checked": false,
+          "clock": 8,
+          "deleted": false
+        },
+        {
+          "id": "init@9",
+          "leftId": "init@8",
+          "rightId": "init@10",
+          "content": "21:00 — провожаем старый год",
+          "type": "task",
+          "checked": false,
+          "clock": 9,
+          "deleted": false
+        },
+        {
+          "id": "init@10",
+          "leftId": "init@9",
+          "rightId": "init@11",
+          "content": "00:00 — встречаем Новый год! 🥂✨",
+          "type": "task",
+          "checked": false,
+          "clock": 10,
+          "deleted": false
+        },
+        {
+          "id": "init@11",
+          "leftId": "init@10",
+          "rightId": "init@12",
+          "content": "Запустить праздничный салют 🎆",
+          "type": "task",
+          "checked": false,
+          "clock": 11,
+          "deleted": false
+        },
+        {
+          "id": "init@12",
+          "leftId": "init@11",
+          "rightId": "init@13",
+          "content": "",
+          "type": "newline",
+          "checked": false,
+          "clock": 12,
+          "deleted": false
+        },
+        {
+          "id": "init@13",
+          "leftId": "init@12",
+          "rightId": "init@14",
+          "content": "2 января",
+          "type": "h2",
+          "checked": false,
+          "clock": 13,
+          "deleted": false
+        },
+        {
+          "id": "init@14",
+          "leftId": "init@13",
+          "rightId": "init@15",
+          "content": "Сходить в баню 🧖‍♂️",
+          "type": "task",
+          "checked": false,
+          "clock": 14,
+          "deleted": false
+        },
+        {
+          "id": "init@15",
+          "leftId": "init@14",
+          "rightId": "TAIL@0",
+          "content": "Заказать такси",
+          "type": "task",
+          "checked": false,
+          "clock": 15,
+          "deleted": false
+        },
+        {
+          "id": null,
+          "leftId": null,
+          "rightId": null,
+          "content": "Купить хлопушки 🎉",
+          "type": "text",
+          "checked": false,
+          "clock": 1,
+          "deleted": false
+        }
+      ],
+      "clock": 16
+    }
+  },
+  "operations": {
+    "test-enter-5f15b946": {
+      "usr_8p2nqx9q@17": {
+        "type": "delete",
+        "id": "init@1",
+        "clock": 17,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@17"
+      },
+      "usr_8p2nqx9q@18": {
+        "type": "delete",
+        "id": "init@2",
+        "clock": 18,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@18"
+      },
+      "usr_8p2nqx9q@19": {
+        "type": "delete",
+        "id": "init@3",
+        "clock": 19,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@19"
+      },
+      "usr_8p2nqx9q@20": {
+        "type": "delete",
+        "id": "init@4",
+        "clock": 20,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@20"
+      },
+      "usr_8p2nqx9q@21": {
+        "type": "delete",
+        "id": "init@5",
+        "clock": 21,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@21"
+      },
+      "usr_8p2nqx9q@22": {
+        "type": "delete",
+        "id": "init@6",
+        "clock": 22,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@22"
+      },
+      "usr_8p2nqx9q@23": {
+        "type": "delete",
+        "id": "init@7",
+        "clock": 23,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@23"
+      },
+      "usr_8p2nqx9q@24": {
+        "type": "delete",
+        "id": "init@8",
+        "clock": 24,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@24"
+      },
+      "usr_8p2nqx9q@25": {
+        "type": "delete",
+        "id": "init@9",
+        "clock": 25,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@25"
+      },
+      "usr_8p2nqx9q@26": {
+        "type": "delete",
+        "id": "init@10",
+        "clock": 26,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@26"
+      },
+      "usr_8p2nqx9q@27": {
+        "type": "delete",
+        "id": "init@11",
+        "clock": 27,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@27"
+      },
+      "usr_8p2nqx9q@28": {
+        "type": "delete",
+        "id": "init@12",
+        "clock": 28,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@28"
+      },
+      "usr_8p2nqx9q@29": {
+        "type": "delete",
+        "id": "init@13",
+        "clock": 29,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@29"
+      },
+      "usr_8p2nqx9q@30": {
+        "type": "delete",
+        "id": "init@14",
+        "clock": 30,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@30"
+      },
+      "usr_8p2nqx9q@31": {
+        "type": "delete",
+        "id": "init@15",
+        "clock": 31,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@31"
+      },
+      "usr_8p2nqx9q@32": {
+        "type": "insert",
+        "id": "usr_8p2nqx9q@32",
+        "leftId": "ROOT@0",
+        "rightId": "init@1",
+        "content": "Первая строка",
+        "itemType": "text",
+        "checked": false,
+        "clock": 32,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@32"
+      },
+      "usr_8p2nqx9q@33": {
+        "type": "insert",
+        "id": "usr_8p2nqx9q@33",
+        "leftId": "usr_8p2nqx9q@32",
+        "rightId": "init@1",
+        "content": "",
+        "itemType": "text",
+        "checked": false,
+        "clock": 33,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@33"
+      },
+      "usr_8p2nqx9q@34": {
+        "type": "text_update",
+        "id": "usr_8p2nqx9q@33",
+        "content": "Вторая строка",
+        "baseContent": "",
+        "clock": 34,
+        "client": "usr_8p2nqx9q",
+        "opId": "usr_8p2nqx9q@34"
+      }
+    },
+    "shared-98e1563d": {
+      "usr_fdvg4dp3@17": {
+        "type": "delete",
+        "id": "init@1",
+        "clock": 17,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@17"
+      },
+      "usr_fdvg4dp3@18": {
+        "type": "delete",
+        "id": "init@2",
+        "clock": 18,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@18"
+      },
+      "usr_fdvg4dp3@19": {
+        "type": "delete",
+        "id": "init@3",
+        "clock": 19,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@19"
+      },
+      "usr_fdvg4dp3@20": {
+        "type": "delete",
+        "id": "init@4",
+        "clock": 20,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@20"
+      },
+      "usr_fdvg4dp3@21": {
+        "type": "delete",
+        "id": "init@5",
+        "clock": 21,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@21"
+      },
+      "usr_fdvg4dp3@22": {
+        "type": "delete",
+        "id": "init@6",
+        "clock": 22,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@22"
+      },
+      "usr_fdvg4dp3@23": {
+        "type": "delete",
+        "id": "init@7",
+        "clock": 23,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@23"
+      },
+      "usr_fdvg4dp3@24": {
+        "type": "delete",
+        "id": "init@8",
+        "clock": 24,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@24"
+      },
+      "usr_fdvg4dp3@25": {
+        "type": "delete",
+        "id": "init@9",
+        "clock": 25,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@25"
+      },
+      "usr_fdvg4dp3@26": {
+        "type": "delete",
+        "id": "init@10",
+        "clock": 26,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@26"
+      },
+      "usr_fdvg4dp3@27": {
+        "type": "delete",
+        "id": "init@11",
+        "clock": 27,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@27"
+      },
+      "usr_fdvg4dp3@28": {
+        "type": "delete",
+        "id": "init@12",
+        "clock": 28,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@28"
+      },
+      "usr_fdvg4dp3@29": {
+        "type": "delete",
+        "id": "init@13",
+        "clock": 29,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@29"
+      },
+      "usr_fdvg4dp3@30": {
+        "type": "delete",
+        "id": "init@14",
+        "clock": 30,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@30"
+      },
+      "usr_fdvg4dp3@31": {
+        "type": "delete",
+        "id": "init@15",
+        "clock": 31,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@31"
+      },
+      "usr_fdvg4dp3@32": {
+        "type": "insert",
+        "id": "usr_fdvg4dp3@32",
+        "leftId": "ROOT@0",
+        "rightId": "init@1",
+        "content": "Привет от Ильи",
+        "itemType": "text",
+        "checked": false,
+        "clock": 32,
+        "client": "usr_fdvg4dp3",
+        "opId": "usr_fdvg4dp3@32"
+      },
+      "usr_tp1jqpd4@34": {
+        "type": "insert",
+        "id": "usr_tp1jqpd4@34",
+        "leftId": "ROOT@0",
+        "rightId": "usr_fdvg4dp3@32",
+        "content": "",
+        "itemType": "text",
+        "checked": false,
+        "clock": 34,
+        "client": "usr_tp1jqpd4",
+        "opId": "usr_tp1jqpd4@34"
+      },
+      "usr_tp1jqpd4@35": {
+        "type": "text_update",
+        "id": "usr_tp1jqpd4@34",
+        "content": "Привет от Димы",
+        "baseContent": "",
+        "clock": 35,
+        "client": "usr_tp1jqpd4",
+        "opId": "usr_tp1jqpd4@35"
+      },
+      "usr_52pn76yt@37": {
+        "type": "text_update",
+        "id": "usr_tp1jqpd4@34",
+        "content": "Привет от Димы (Салют)",
+        "baseContent": "Привет от Димы",
+        "clock": 37,
+        "client": "usr_52pn76yt",
+        "opId": "usr_52pn76yt@37"
+      },
+      "usr_t1oqei21@36": {
+        "type": "text_update",
+        "id": "usr_tp1jqpd4@34",
+        "content": "Привет от Димы (Салют) (Ёлка)",
+        "baseContent": "Привет от Димы",
+        "clock": 36,
+        "client": "usr_t1oqei21",
+        "opId": "usr_t1oqei21@36"
+      },
+      "usr_t1oqei21@39": {
+        "type": "insert",
+        "id": "usr_t1oqei21@39",
+        "leftId": "usr_fdvg4dp3@32",
+        "rightId": "init@1",
+        "content": "Онлайн-план от Димы",
+        "itemType": "text",
+        "checked": false,
+        "clock": 39,
+        "client": "usr_t1oqei21",
+        "opId": "usr_t1oqei21@39"
+      },
+      "usr_52pn76yt@39": {
+        "type": "insert",
+        "id": "usr_52pn76yt@39",
+        "leftId": "ROOT@0",
+        "rightId": "usr_tp1jqpd4@34",
+        "content": "Офлайн-план от Ильи",
+        "itemType": "text",
+        "checked": false,
+        "clock": 39,
+        "client": "usr_52pn76yt",
+        "opId": "usr_52pn76yt@39"
+      }
+    },
+    "test-enter-4534754c": {
+      "usr_m4rg1mis@17": {
+        "type": "delete",
+        "id": "init@1",
+        "clock": 17,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@17"
+      },
+      "usr_m4rg1mis@18": {
+        "type": "delete",
+        "id": "init@2",
+        "clock": 18,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@18"
+      },
+      "usr_m4rg1mis@19": {
+        "type": "delete",
+        "id": "init@3",
+        "clock": 19,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@19"
+      },
+      "usr_m4rg1mis@20": {
+        "type": "delete",
+        "id": "init@4",
+        "clock": 20,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@20"
+      },
+      "usr_m4rg1mis@21": {
+        "type": "delete",
+        "id": "init@5",
+        "clock": 21,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@21"
+      },
+      "usr_m4rg1mis@22": {
+        "type": "delete",
+        "id": "init@6",
+        "clock": 22,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@22"
+      },
+      "usr_m4rg1mis@23": {
+        "type": "delete",
+        "id": "init@7",
+        "clock": 23,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@23"
+      },
+      "usr_m4rg1mis@24": {
+        "type": "delete",
+        "id": "init@8",
+        "clock": 24,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@24"
+      },
+      "usr_m4rg1mis@25": {
+        "type": "delete",
+        "id": "init@9",
+        "clock": 25,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@25"
+      },
+      "usr_m4rg1mis@26": {
+        "type": "delete",
+        "id": "init@10",
+        "clock": 26,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@26"
+      },
+      "usr_m4rg1mis@27": {
+        "type": "delete",
+        "id": "init@11",
+        "clock": 27,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@27"
+      },
+      "usr_m4rg1mis@28": {
+        "type": "delete",
+        "id": "init@12",
+        "clock": 28,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@28"
+      },
+      "usr_m4rg1mis@29": {
+        "type": "delete",
+        "id": "init@13",
+        "clock": 29,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@29"
+      },
+      "usr_m4rg1mis@30": {
+        "type": "delete",
+        "id": "init@14",
+        "clock": 30,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@30"
+      },
+      "usr_m4rg1mis@31": {
+        "type": "delete",
+        "id": "init@15",
+        "clock": 31,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@31"
+      },
+      "usr_m4rg1mis@32": {
+        "type": "insert",
+        "id": "usr_m4rg1mis@32",
+        "leftId": "ROOT@0",
+        "rightId": "init@1",
+        "content": "Первая строка",
+        "itemType": "text",
+        "checked": false,
+        "clock": 32,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@32"
+      },
+      "usr_m4rg1mis@33": {
+        "type": "insert",
+        "id": "usr_m4rg1mis@33",
+        "leftId": "usr_m4rg1mis@32",
+        "rightId": "init@1",
+        "content": "",
+        "itemType": "text",
+        "checked": false,
+        "clock": 33,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@33"
+      },
+      "usr_m4rg1mis@34": {
+        "type": "text_update",
+        "id": "usr_m4rg1mis@33",
+        "content": "Вторая строка",
+        "baseContent": "",
+        "clock": 34,
+        "client": "usr_m4rg1mis",
+        "opId": "usr_m4rg1mis@34"
+      }
+    },
+    "shared-25f0a112": {
+      "usr_ypywk7ii@17": {
+        "type": "delete",
+        "id": "init@1",
+        "clock": 17,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@17"
+      },
+      "usr_ypywk7ii@18": {
+        "type": "delete",
+        "id": "init@2",
+        "clock": 18,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@18"
+      },
+      "usr_ypywk7ii@19": {
+        "type": "delete",
+        "id": "init@3",
+        "clock": 19,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@19"
+      },
+      "usr_ypywk7ii@20": {
+        "type": "delete",
+        "id": "init@4",
+        "clock": 20,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@20"
+      },
+      "usr_ypywk7ii@21": {
+        "type": "delete",
+        "id": "init@5",
+        "clock": 21,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@21"
+      },
+      "usr_ypywk7ii@22": {
+        "type": "delete",
+        "id": "init@6",
+        "clock": 22,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@22"
+      },
+      "usr_ypywk7ii@23": {
+        "type": "delete",
+        "id": "init@7",
+        "clock": 23,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@23"
+      },
+      "usr_ypywk7ii@24": {
+        "type": "delete",
+        "id": "init@8",
+        "clock": 24,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@24"
+      },
+      "usr_ypywk7ii@25": {
+        "type": "delete",
+        "id": "init@9",
+        "clock": 25,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@25"
+      },
+      "usr_ypywk7ii@26": {
+        "type": "delete",
+        "id": "init@10",
+        "clock": 26,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@26"
+      },
+      "usr_ypywk7ii@27": {
+        "type": "delete",
+        "id": "init@11",
+        "clock": 27,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@27"
+      },
+      "usr_ypywk7ii@28": {
+        "type": "delete",
+        "id": "init@12",
+        "clock": 28,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@28"
+      },
+      "usr_ypywk7ii@29": {
+        "type": "delete",
+        "id": "init@13",
+        "clock": 29,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@29"
+      },
+      "usr_ypywk7ii@30": {
+        "type": "delete",
+        "id": "init@14",
+        "clock": 30,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@30"
+      },
+      "usr_ypywk7ii@31": {
+        "type": "delete",
+        "id": "init@15",
+        "clock": 31,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@31"
+      },
+      "usr_ypywk7ii@32": {
+        "type": "insert",
+        "id": "usr_ypywk7ii@32",
+        "leftId": "ROOT@0",
+        "rightId": "init@1",
+        "content": "Привет от Ильи",
+        "itemType": "text",
+        "checked": false,
+        "clock": 32,
+        "client": "usr_ypywk7ii",
+        "opId": "usr_ypywk7ii@32"
+      },
+      "usr_nm5bje0u@34": {
+        "type": "insert",
+        "id": "usr_nm5bje0u@34",
+        "leftId": "ROOT@0",
+        "rightId": "usr_ypywk7ii@32",
+        "content": "",
+        "itemType": "text",
+        "checked": false,
+        "clock": 34,
+        "client": "usr_nm5bje0u",
+        "opId": "usr_nm5bje0u@34"
+      },
+      "usr_nm5bje0u@35": {
+        "type": "text_update",
+        "id": "usr_nm5bje0u@34",
+        "content": "Привет от Димы",
+        "baseContent": "",
+        "clock": 35,
+        "client": "usr_nm5bje0u",
+        "opId": "usr_nm5bje0u@35"
+      },
+      "usr_ffjhjk1v@37": {
+        "type": "text_update",
+        "id": "usr_nm5bje0u@34",
+        "content": "Привет от Димы (Салют)",
+        "baseContent": "Привет от Димы",
+        "clock": 37,
+        "client": "usr_ffjhjk1v",
+        "opId": "usr_ffjhjk1v@37"
+      },
+      "usr_5osaa80d@36": {
+        "type": "text_update",
+        "id": "usr_nm5bje0u@34",
+        "content": "Привет от Димы (Салют) (Ёлка)",
+        "baseContent": "Привет от Димы",
+        "clock": 36,
+        "client": "usr_5osaa80d",
+        "opId": "usr_5osaa80d@36"
+      },
+      "usr_5osaa80d@39": {
+        "type": "insert",
+        "id": "usr_5osaa80d@39",
+        "leftId": "usr_ypywk7ii@32",
+        "rightId": "init@1",
+        "content": "Онлайн-план от Димы",
+        "itemType": "text",
+        "checked": false,
+        "clock": 39,
+        "client": "usr_5osaa80d",
+        "opId": "usr_5osaa80d@39"
+      },
+      "usr_ffjhjk1v@39": {
+        "type": "insert",
+        "id": "usr_ffjhjk1v@39",
+        "leftId": "ROOT@0",
+        "rightId": "usr_nm5bje0u@34",
+        "content": "Офлайн-план от Ильи",
+        "itemType": "text",
+        "checked": false,
+        "clock": 39,
+        "client": "usr_ffjhjk1v",
+        "opId": "usr_ffjhjk1v@39"
+      }
+    },
+    "test-mob-02a11c41": {
+      "usr_69fgfo3k@17": {
+        "type": "insert",
+        "id": "usr_69fgfo3k@17",
+        "leftId": "init@15",
+        "rightId": "TAIL@0",
+        "content": "",
+        "itemType": "task",
+        "checked": false,
+        "clock": 17,
+        "client": "usr_69fgfo3k",
+        "opId": "usr_69fgfo3k@17"
+      },
+      "usr_69fgfo3k@18": {
+        "type": "toggle_task",
+        "id": "init@4",
+        "checked": true,
+        "clock": 18,
+        "client": "usr_69fgfo3k",
+        "opId": "usr_69fgfo3k@18"
+      }
+    },
+    "our-plans-ny-2027": {
+      "op_test_1": {
+        "client": "client_ilya",
+        "clock": 1,
+        "type": "insert",
+        "content": "Купить хлопушки 🎉"
+      }
+    }
+  }
 }

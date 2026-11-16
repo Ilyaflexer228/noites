@@ -183,26 +183,16 @@ class App {
   }
 
   /**
-   * Индикатор синхронизации с чётким разделением онлайн/офлайн
+   * Индикатор синхронизации с честным разделением онлайн/офлайн
    */
   updateSyncStatusBadge(status) {
     const pill = document.getElementById('sync-status-pill');
     const text = document.getElementById('sync-status-text');
     if (!pill || !text) return;
 
-    pill.className = `sync-status-pill status-${status}`;
-
     switch (status) {
-      case 'local_saved':
-        text.textContent = 'Сохранено на устройстве';
-        pill.className = 'sync-status-pill status-synced';
-        break;
-      case 'local_error':
-        text.textContent = 'Ошибка локального сохранения';
-        pill.className = 'sync-status-pill status-error';
-        break;
       case SyncStatus.SYNCED:
-        text.textContent = 'Синхронизировано онлайн';
+        text.textContent = 'Синхронизировано';
         pill.className = 'sync-status-pill status-synced';
         break;
       case SyncStatus.SYNCING:
@@ -210,19 +200,25 @@ class App {
         pill.className = 'sync-status-pill status-syncing';
         break;
       case SyncStatus.CONNECTING:
-        text.textContent = 'Подключение к серверу…';
+        text.textContent = 'Подключение…';
         pill.className = 'sync-status-pill status-connecting';
         break;
       case SyncStatus.OFFLINE:
-        text.textContent = 'Сохранено на устройстве';
+        text.textContent = 'Нет соединения';
         pill.className = 'sync-status-pill status-offline';
         break;
-      case SyncStatus.ERROR:
-        text.textContent = 'Сервер недоступен (сохранено локально)';
+      case 'local_saved':
+        text.textContent = 'Сохранено только на устройстве';
         pill.className = 'sync-status-pill status-offline';
+        break;
+      case 'local_error':
+      case SyncStatus.ERROR:
+        text.textContent = 'Ошибка сохранения';
+        pill.className = 'sync-status-pill status-error';
         break;
       default:
         text.textContent = 'Сохранено';
+        pill.className = 'sync-status-pill status-offline';
         break;
     }
   }

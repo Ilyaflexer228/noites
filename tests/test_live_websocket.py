@@ -69,43 +69,62 @@ async def read_ws_text(reader):
     return json.loads(payload.decode('utf-8'))
 
 async def run_test():
-    print("Подключение клиента 1 (Илья)...")
-    r1, w1 = await connect_ws(1234, 'our-plans-ny-2027', 'ny2027-friends', 'client_ilya')
-    msg1 = await read_ws_text(r1)
-    print("  Клиент 1 получил:", msg1)
-    assert msg1.get('type') == 'auth_success'
+    import subprocess
+    # Check if server is running on port 1234, if not, start server_py.py
+    proc = None
+    try:
+        reader, writer = await asyncio.wait_for(asyncio.open_connection('127.0.0.1', 1234), timeout=0.5)
+        writer.close()
+    except Exception:
+        web_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        proc = subprocess.Popen([sys.executable, os.path.join(web_dir, 'server', 'server_py.py')], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        await asyncio.sleep(1.0)
 
-    print("Подключение клиента 2 (Дима)...")
-    r2, w2 = await connect_ws(1234, 'our-plans-ny-2027', 'ny2027-friends', 'client_dima')
-    msg2 = await read_ws_text(r2)
-    print("  Клиент 2 получил:", msg2)
-    assert msg2.get('type') == 'auth_success'
+    try:
+        print("Подключение клиента 1 (Илья)...")
+        r1, w1 = await connect_ws(1234, 'our-plans-ny-2027', 'ny2027-friends', 'client_ilya')
+        msg1 = await read_ws_text(r1)
+        print("  Клиент 1 получил:", msg1)
+        assert msg1.get('type') == 'auth_success'
 
-    # Клиент 1 отправляет CRDT-операцию
-    print("Илья отправляет правку...")
-    op_payload = json.dumps({
-        'type': 'op',
-        'docId': 'our-plans-ny-2027',
-        'opId': 'op_test_1',
-        'op': {'client': 'client_ilya', 'clock': 1, 'type': 'insert', 'content': 'Купить хлопушки 🎉'}
-    })
-    await send_ws_text(w1, op_payload)
+        print("Подключение клиента 2 (Дима)...")
+        r2, w2 = await connect_ws(1234, 'our-plans-ny-2027', 'ny2027-friends', 'client_dima')
+        msg2 = await read_ws_text(r2)
+        print("  Клиент 2 получил:", msg2)
+        assert msg2.get('type') == 'auth_success'
 
-    # Клиент 1 должен получить op_ack
-    ack = await read_ws_text(r1)
-    print("  Илья получил подтверждение сохранения:", ack)
-    assert ack.get('type') == 'op_ack'
-    assert ack.get('opId') == 'op_test_1'
+        # Клиент 1 отправляет CRDT-операцию
+        print("Илья отправляет правку...")
+        op_payload = json.dumps({
+            'type': 'op',
+            'docId': 'our-plans-ny-2027',
+            'opId': 'op_test_1',
+            'op': {'client': 'client_ilya', 'clock': 1, 'type': 'insert', 'content': 'Купить хлопушки 🎉'}
+        })
+        await send_ws_text(w1, op_payload)
 
-    # Клиент 2 должен получить broadcast операцию
-    remote_op = await read_ws_text(r2)
-    print("  Дима получил правку Ильи в реальном времени:", remote_op)
-    assert remote_op.get('type') == 'op'
-    assert remote_op.get('op', {}).get('content') == 'Купить хлопушки 🎉'
+        # Клиент 1 должен получить op_ack (возможно, после снимка)
+        ack = await read_ws_text(r1)
+        while ack.get('type') == 'snapshot':
+            ack = await read_ws_text(r1)
+        print("  Илья получил подтверждение сохранения:", ack)
+        assert ack.get('type') == 'op_ack'
+        assert ack.get('opId') == 'op_test_1'
 
-    print("\n✅ ИНТЕГРАЦИОННЫЙ ТЕСТ ЖИВОГО WEBSOCKET-СОЕДИНЕНИЯ УСПЕШНО ПРОЙДЕН!")
-    w1.close()
-    w2.close()
+        # Клиент 2 должен получить broadcast операцию
+        remote_op = await read_ws_text(r2)
+        while remote_op.get('type') == 'snapshot':
+            remote_op = await read_ws_text(r2)
+        print("  Дима получил правку Ильи в реальном времени:", remote_op)
+        assert remote_op.get('type') == 'op'
+        assert remote_op.get('op', {}).get('content') == 'Купить хлопушки 🎉'
+
+        print("\n✅ ИНТЕГРАЦИОННЫЙ ТЕСТ ЖИВОГО WEBSOCKET-СОЕДИНЕНИЯ УСПЕШНО ПРОЙДЕН!")
+        w1.close()
+        w2.close()
+    finally:
+        if proc:
+            proc.terminate()
 
 if __name__ == '__main__':
     asyncio.run(run_test())

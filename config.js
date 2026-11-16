@@ -80,6 +80,16 @@ export function getUrlParams() {
     }
   }
 
+  // Если адрес WebSocket-сервера не передан явно, проверяем сохранённый в localStorage
+  if (!wsUrl) {
+    const savedWs = localStorage.getItem('note_ws_url');
+    if (savedWs) wsUrl = savedWs;
+  } else {
+    try {
+      localStorage.setItem('note_ws_url', wsUrl);
+    } catch (e) {}
+  }
+
   return {
     docId: docId || CONFIG.DOCUMENT_NAME,
     inviteKey,

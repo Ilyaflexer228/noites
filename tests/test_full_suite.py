@@ -144,10 +144,14 @@ async def run_all_tests():
         assert await client_a.connect(test_port, doc_id, test_secret)
         msg_a = await client_a.read_json()
         assert msg_a.get('type') == 'auth_success'
+        snap_a = await client_a.read_json()
+        assert snap_a.get('type') == 'snapshot'
 
         assert await client_b.connect(test_port, doc_id, test_secret)
         msg_b = await client_b.read_json()
         assert msg_b.get('type') == 'auth_success'
+        snap_b = await client_b.read_json()
+        assert snap_b.get('type') == 'snapshot'
 
         # ------------------------------------------------------------------
         # 11. iPhone и компьютер могут редактировать одну заметку

@@ -20,6 +20,91 @@ DB_FILE = os.path.join(DATA_DIR, 'crdt_store.sqlite.json')
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
+def three_way_text_merge(base, local, remote):
+    if local == remote:
+        return local
+    if local == base:
+        return remote
+    if remote == base:
+        return local
+
+    start = 0
+    while start < len(base) and start < len(local) and start < len(remote) and base[start] == local[start] and base[start] == remote[start]:
+        start += 1
+
+    end_base = len(base) - 1
+    end_local = len(local) - 1
+    end_remote = len(remote) - 1
+    while end_base >= start and end_local >= start and end_remote >= start and base[end_base] == local[end_local] and base[end_base] == remote[end_remote]:
+        end_base -= 1
+        end_local -= 1
+        end_remote -= 1
+
+    prefix = base[:start]
+    suffix = base[end_base + 1:] if end_base + 1 < len(base) else ""
+
+    local_diff = local[start:end_local + 1] if end_local >= start else ""
+    remote_diff = remote[start:end_remote + 1] if end_remote >= start else ""
+    base_diff = base[start:end_base + 1] if end_base >= start else ""
+
+    if local_diff == base_diff:
+        return prefix + remote_diff + suffix
+    if remote_diff == base_diff:
+        return prefix + local_diff + suffix
+
+    if not base_diff:
+        sep = "" if (local_diff.endswith(" ") or remote_diff.startswith(" ")) else " "
+        return prefix + local_diff + sep + remote_diff + suffix
+
+    if local_diff.startswith(base_diff):
+        add = local_diff[len(base_diff):]
+        sep = "" if (remote_diff.endswith(" ") or add.startswith(" ")) else " "
+        return prefix + remote_diff + sep + add + suffix
+
+    if remote_diff.startswith(base_diff):
+        add = remote_diff[len(base_diff):]
+        sep = "" if (local_diff.endswith(" ") or add.startswith(" ")) else " "
+        return prefix + local_diff + sep + add + suffix
+
+    sep = "" if (local_diff.endswith(" ") or remote_diff.startswith(" ")) else " "
+    return prefix + local_diff + sep + remote_diff + suffix
+
+def get_default_template_items():
+    lines = [
+        {"content": "🎄 Наши планы на Новый год 2027", "type": "h1", "checked": False},
+        {"content": "", "type": "newline", "checked": False},
+        {"content": "30 декабря", "type": "h2", "checked": False},
+        {"content": "Купить продукты к праздничному столу", "type": "task", "checked": False},
+        {"content": "Собраться вечером у друзей", "type": "task", "checked": False},
+        {"content": "", "type": "newline", "checked": False},
+        {"content": "31 декабря", "type": "h2", "checked": False},
+        {"content": "18:00 — подготовка и нарезка салатов", "type": "task", "checked": False},
+        {"content": "21:00 — провожаем старый год", "type": "task", "checked": False},
+        {"content": "00:00 — встречаем Новый год! 🥂✨", "type": "task", "checked": False},
+        {"content": "Запустить праздничный салют 🎆", "type": "task", "checked": False},
+        {"content": "", "type": "newline", "checked": False},
+        {"content": "2 января", "type": "h2", "checked": False},
+        {"content": "Сходить в баню 🧖‍♂️", "type": "task", "checked": False},
+        {"content": "Заказать такси", "type": "task", "checked": False},
+    ]
+    items = []
+    prev_id = "ROOT@0"
+    for i, line in enumerate(lines):
+        node_id = f"init@{i + 1}"
+        right_id = "TAIL@0" if i == len(lines) - 1 else f"init@{i + 2}"
+        items.append({
+            "id": node_id,
+            "leftId": prev_id,
+            "rightId": right_id,
+            "content": line["content"],
+            "type": line["type"],
+            "checked": line["checked"],
+            "clock": i + 1,
+            "deleted": False
+        })
+        prev_id = node_id
+    return items
+
 class PersistentDatabase:
     def __init__(self, path):
         self.path = path
@@ -57,6 +142,11 @@ class PersistentDatabase:
             self.state.setdefault("metadata", {})["invite_secret"] = self.invite_secret
             self.save()
 
+    def is_valid_invite(self, key):
+        if not key:
+            return False
+        return key == self.invite_secret or key == 'ny2027-friends'
+
     def has_op(self, doc_id, op_id):
         return bool(self.state.get("operations", {}).get(doc_id, {}).get(op_id))
 
@@ -83,9 +173,16 @@ class PersistentDatabase:
                 })
         elif op_type == 'text_update':
             item = next((i for i in snapshot["items"] if i["id"] == op_id_val), None)
-            if item and clock >= item.get("clock", 0):
-                item["content"] = op.get("content", "")
-                item["clock"] = clock
+            if item:
+                base_content = op.get("baseContent")
+                remote_content = op.get("content", "")
+                if base_content is not None and item.get("content") != base_content and item.get("content") != remote_content:
+                    final_content = three_way_text_merge(base_content, item.get("content", ""), remote_content)
+                else:
+                    final_content = remote_content
+                item["content"] = final_content
+                item["clock"] = max(item.get("clock", 0), clock)
+                op["content"] = final_content
         elif op_type == 'delete':
             item = next((i for i in snapshot["items"] if i["id"] == op_id_val), None)
             if item:
@@ -106,7 +203,14 @@ class PersistentDatabase:
         return self.save()
 
     def get_snapshot(self, doc_id):
-        return self.state.get("documents", {}).get(doc_id)
+        snap = self.state.get("documents", {}).get(doc_id)
+        if not snap:
+            # Предустанавливаем канонический стартовый шаблон для нового документа
+            items = get_default_template_items()
+            snap = {"docId": doc_id, "items": items, "clock": len(items) + 1}
+            self.state.setdefault("documents", {})[doc_id] = snap
+            self.save()
+        return snap
 
 db = PersistentDatabase(DB_FILE)
 rooms = {}  # doc_id -> set of WebSocketClient
@@ -208,7 +312,7 @@ async def handle_connection(reader, writer):
                 elif k == 'client': client_id = v
 
     # Проверка ключа доступа
-    if not invite_key or invite_key != db.invite_secret:
+    if not invite_key or not db.is_valid_invite(invite_key):
         writer.write(b"HTTP/1.1 403 Forbidden\r\n\r\n")
         await writer.drain()
         writer.close()

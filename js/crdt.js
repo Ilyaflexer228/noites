@@ -8,6 +8,74 @@
  * 4. Бесконфликтное слияние одновременных правок (RGA + Lamport Clocks + LWW для чекбоксов).
  */
 
+/**
+ * Слияние трёх версий строки (Three-Way Character Merge) без потери правок при одновременном вводе
+ */
+export function threeWayTextMerge(base, local, remote) {
+  if (local === remote) return local;
+  if (local === base) return remote;
+  if (remote === base) return local;
+
+  let start = 0;
+  while (
+    start < base.length &&
+    start < local.length &&
+    start < remote.length &&
+    base[start] === local[start] &&
+    base[start] === remote[start]
+  ) {
+    start++;
+  }
+
+  let endBase = base.length - 1;
+  let endLocal = local.length - 1;
+  let endRemote = remote.length - 1;
+  while (
+    endBase >= start &&
+    endLocal >= start &&
+    endRemote >= start &&
+    base[endBase] === local[endLocal] &&
+    base[endBase] === remote[endRemote]
+  ) {
+    endBase--;
+    endLocal--;
+    endRemote--;
+  }
+
+  const prefix = base.slice(0, start);
+  const suffix = base.slice(endBase + 1);
+
+  const localDiff = local.slice(start, endLocal + 1);
+  const remoteDiff = remote.slice(start, endRemote + 1);
+  const baseDiff = base.slice(start, endBase + 1);
+
+  if (localDiff === baseDiff) {
+    return prefix + remoteDiff + suffix;
+  }
+  if (remoteDiff === baseDiff) {
+    return prefix + localDiff + suffix;
+  }
+
+  if (baseDiff.length === 0) {
+    const separator = (localDiff.endsWith(' ') || remoteDiff.startsWith(' ')) ? '' : ' ';
+    return prefix + localDiff + separator + remoteDiff + suffix;
+  }
+
+  if (localDiff.startsWith(baseDiff)) {
+    const localAddition = localDiff.slice(baseDiff.length);
+    const separator = (remoteDiff.endsWith(' ') || localAddition.startsWith(' ')) ? '' : ' ';
+    return prefix + remoteDiff + separator + localAddition + suffix;
+  }
+  if (remoteDiff.startsWith(baseDiff)) {
+    const remoteAddition = remoteDiff.slice(baseDiff.length);
+    const separator = (localDiff.endsWith(' ') || remoteAddition.startsWith(' ')) ? '' : ' ';
+    return prefix + localDiff + separator + remoteAddition + suffix;
+  }
+
+  const sep = (localDiff.endsWith(' ') || remoteDiff.startsWith(' ')) ? '' : ' ';
+  return prefix + localDiff + sep + remoteDiff + suffix;
+}
+
 export class LamportClock {
   constructor(clientId) {
     this.clientId = clientId;
@@ -182,6 +250,7 @@ export class CollaborativeDoc {
 
     if (item.content === newContent) return null;
 
+    const oldContent = item.content;
     const timestamp = this.clock.tick();
     item.content = newContent;
     item.clock = timestamp.time;
@@ -191,6 +260,7 @@ export class CollaborativeDoc {
       type: 'text_update',
       id: key,
       content: newContent,
+      baseContent: oldContent,
       clock: timestamp.time,
       client: this.clientId,
       opId: `${this.clientId}@${timestamp.time}`,
@@ -292,12 +362,22 @@ export class CollaborativeDoc {
     if (op.type === 'text_update') {
       const item = this.items.get(op.id);
       if (item) {
-        if (!item.clock || op.clock >= item.clock) {
-          item.content = op.content;
-          item.clock = op.clock;
-          this.notify('remote', op);
-          return true;
+        let finalContent = op.content;
+        if (op.baseContent !== undefined && item.content !== op.baseContent && item.content !== op.content) {
+          // Конкурентное одновременное редактирование одной строки двумя пользователями
+          // Выполняем 3-way слияние без потери текста обеих сторон
+          finalContent = threeWayTextMerge(op.baseContent, item.content, op.content);
         }
+        item.content = finalContent;
+        item.clock = Math.max(item.clock || 0, op.clock || 0);
+        this.notify('remote', {
+          type: 'text_update',
+          id: op.id,
+          content: finalContent,
+          clock: item.clock,
+          client: op.client,
+        });
+        return true;
       }
       return false;
     }
@@ -629,10 +709,34 @@ export class CollaborativeDoc {
     ];
 
     let prevId = this.head;
-    for (const line of lines) {
-      const item = this.insertAfter(prevId, line.content, line.type, line.checked);
-      prevId = item.id;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const deterministicId = new NodeID('init', i + 1);
+      const rightId = (i === lines.length - 1) ? this.tail : new NodeID('init', i + 2);
+      const item = new CRDTItem(
+        deterministicId,
+        prevId,
+        rightId,
+        line.content,
+        line.type,
+        line.checked
+      );
+      item.clock = i + 1;
+      item.checkedClock = i + 1;
+      this.items.set(deterministicId.toString(), item);
+
+      const prevItem = this.items.get(prevId.toString());
+      if (prevItem) {
+        prevItem.rightId = deterministicId;
+      }
+      prevId = deterministicId;
     }
+
+    const tailItem = this.items.get(this.tail.toString());
+    if (tailItem) {
+      tailItem.leftId = prevId;
+    }
+    this.clock.setTime(lines.length + 1);
   }
 
   toHTML() {

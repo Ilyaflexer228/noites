@@ -200,6 +200,21 @@ export class AppleNotesEditor {
 
     this.container.addEventListener('beforeinput', (e) => {
       if (this.isComposing || this.isRenderingRemote) return;
+
+      // Мобильные виртуальные клавиатуры (Android Gboard, iOS Safari) генерируют insertParagraph
+      if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
+        const now = Date.now();
+        if (now - (this._lastKeydownEnter || 0) < 150) {
+          // Уже обработано в keydown Enter, предотвращаем дублирование
+          e.preventDefault();
+          return;
+        }
+        this._lastBeforeInputEnter = now;
+        e.preventDefault();
+        this.handleEnterKey(e.inputType === 'insertLineBreak');
+        return;
+      }
+
       if (
         e.inputType === 'deleteContentBackward' ||
         e.inputType === 'deleteContentForward' ||
@@ -309,8 +324,14 @@ export class AppleNotesEditor {
     }
 
     if (e.key === 'Enter') {
+      const now = Date.now();
+      if (now - (this._lastBeforeInputEnter || 0) < 150) {
+        e.preventDefault();
+        return;
+      }
+      this._lastKeydownEnter = now;
       e.preventDefault();
-      this.handleEnterKey();
+      this.handleEnterKey(e.shiftKey);
       return;
     }
 
@@ -318,6 +339,146 @@ export class AppleNotesEditor {
       this.handleDeleteKey(e);
       return;
     }
+  }
+
+  handleEnterKey(isShift = false) {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+
+    // 1. Если выделен диапазон текста, удаляем выделенное содержимое перед созданием новой строки
+    if (!sel.isCollapsed) {
+      const range = sel.getRangeAt(0);
+      try {
+        range.deleteContents();
+      } catch (e) {}
+    }
+
+    const block = this.findEnclosingBlock(sel.anchorNode);
+
+    // Если курсор не внутри конкретного блока (например, пустой контейнер)
+    if (!block || !block.dataset.crdtId) {
+      const newItem = this.crdtDoc.insertAfter(this.crdtDoc.head, '', 'text');
+      const newId = newItem.id.toString();
+      let p = this.container.querySelector(`[data-crdt-id="${newId}"]`);
+      if (!p) {
+        p = document.createElement('p');
+        p.className = 'note-paragraph';
+        p.dataset.crdtId = newId;
+        p.innerHTML = '<br>';
+        this.container.appendChild(p);
+      }
+      this.focusElement(p, false);
+      return;
+    }
+
+    const crdtId = block.dataset.crdtId;
+    const item = this.crdtDoc.items.get(crdtId);
+    const currentType = item ? item.type : 'text';
+    const isTask = block.classList.contains('note-task-row') || currentType === 'task';
+    const target = isTask ? (block.querySelector('.note-task-text') || block) : block;
+    const fullText = this.getBlockText(block);
+
+    // СЛУЧАЙ А: Shift+Enter — мягкий перенос строки внутри текущего блока
+    if (isShift) {
+      try {
+        document.execCommand('insertLineBreak');
+      } catch (err) {
+        const range = sel.getRangeAt(0);
+        const br = document.createElement('br');
+        range.insertNode(br);
+        range.setStartAfter(br);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+      const newText = this.getBlockText(block);
+      this.crdtDoc.updateText(crdtId, newText);
+      return;
+    }
+
+    // СЛУЧАЙ Б: Пустой пункт списка (чек-лист, маркированный или нумерованный список)
+    // В Apple Notes нажатие Enter на пустом пункте завершает список и превращает его в обычный абзац!
+    if (fullText.trim() === '' && (isTask || currentType === 'bullet' || currentType === 'number')) {
+      this.crdtDoc.updateItemType(crdtId, 'text');
+      const newEl = this.createDOMElementForOp({
+        id: crdtId,
+        content: '',
+        itemType: 'text',
+        checked: false,
+      });
+      block.replaceWith(newEl);
+      this.focusElement(newEl, false);
+      this.reconcileDOMWithCRDT();
+      return;
+    }
+
+    // СЛУЧАЙ В: Определение типа следующего блока
+    let nextType = 'text';
+    if (isTask) {
+      nextType = 'task'; // В чек-листе Enter создаёт следующий чек-бокс
+    } else if (currentType === 'bullet') {
+      nextType = 'bullet';
+    } else if (currentType === 'number') {
+      nextType = 'number';
+    } else {
+      // Для заголовков H1, H2 и обычного текста следующий блок — всегда обычный абзац
+      nextType = 'text';
+    }
+
+    // СЛУЧАЙ Г: Вычисление смещения курсора и разделение строки на две
+    const caretOffset = this.getCaretOffset(target);
+    const beforeText = fullText.slice(0, caretOffset);
+    const afterText = fullText.slice(caretOffset);
+
+    // 1. Обновляем текущий блок (остаётся текст до курсора)
+    this.crdtDoc.updateText(crdtId, beforeText);
+    if (isTask) {
+      target.textContent = beforeText;
+      if (!beforeText) target.innerHTML = '<br>';
+    } else {
+      block.textContent = beforeText;
+      if (!beforeText) block.innerHTML = '<br>';
+    }
+
+    // 2. Создаём новый блок в модели CRDT сразу после текущего
+    const newItem = this.crdtDoc.insertAfter(crdtId, afterText, nextType, false);
+    const newId = newItem.id.toString();
+
+    // 3. Элемент DOM создаётся автоматически через слушатель CRDT (subscribeCRDT -> applyRemoteUpdateToDOM)
+    let newEl = this.container.querySelector(`[data-crdt-id="${newId}"]`);
+    if (!newEl) {
+      newEl = this.createDOMElementForOp({
+        id: newId,
+        content: afterText,
+        itemType: nextType,
+        checked: false,
+      });
+      block.after(newEl);
+    }
+
+    // 4. Фокусируем курсор в начале нового блока
+    this.focusElement(newEl, false);
+  }
+
+  getCaretOffset(element) {
+    let caretOffset = 0;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0);
+      try {
+        if (element.contains(range.startContainer)) {
+          const preCaretRange = range.cloneRange();
+          preCaretRange.selectNodeContents(element);
+          preCaretRange.setEnd(range.startContainer, range.startOffset);
+          caretOffset = preCaretRange.toString().length;
+        } else {
+          caretOffset = this.getBlockText(element).length;
+        }
+      } catch (e) {
+        caretOffset = this.getBlockText(element).length;
+      }
+    }
+    return caretOffset;
   }
 
   handleDeleteKey(e) {
