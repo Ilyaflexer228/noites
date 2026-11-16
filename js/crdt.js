@@ -410,7 +410,17 @@ export class CollaborativeDoc {
 
     // Фильтруем элементы снимка, исключая дубликаты ROOT и TAIL
     const validRawItems = snapshot.items.filter((r) => r.id !== 'ROOT@0' && r.id !== 'TAIL@0');
-    if (validRawItems.length === 0) return false;
+    if (validRawItems.length === 0) {
+      // Полностью пустой сохранённый документ (все блоки удалены пользователем)
+      this.items.clear();
+      this.head = new NodeID('ROOT', 0);
+      this.tail = new NodeID('TAIL', 0);
+      this.items.set(this.head.toString(), new CRDTItem(this.head, null, this.tail, '', 'root'));
+      this.items.set(this.tail.toString(), new CRDTItem(this.tail, this.head, null, '', 'tail'));
+      if (snapshot.clock) this.clock.setTime(snapshot.clock);
+      this.notify('snapshot', null);
+      return true;
+    }
 
     // Вычисляем максимальные часы Лампорта для предотвращения коллизий ID после F5
     let maxClock = snapshot.clock || 0;
@@ -585,10 +595,20 @@ export class CollaborativeDoc {
   }
 
   /**
-   * Стартовый шаблон (создаётся ТОЛЬКО если документ пуст)
+   * Полная очистка всех видимых блоков документа
+   */
+  clear() {
+    const visible = this.getVisibleItems();
+    for (const item of visible) {
+      this.deleteItem(item.id);
+    }
+  }
+
+  /**
+   * Стартовый шаблон (создаётся ТОЛЬКО если документ пуст и не был инициализирован ранее)
    */
   initializeWithTemplate() {
-    if (this.getVisibleItems().length > 0) return;
+    if (this.items.size > 2 || this.getVisibleItems().length > 0) return;
 
     const lines = [
       { content: '🎄 Наши планы на Новый год 2027', type: 'h1' },

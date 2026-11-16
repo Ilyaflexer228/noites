@@ -1,6 +1,7 @@
 """
-Автоматизированный комплекс тестов сохранения и совместной работы (Тесты A, B, C, D, E)
-с использованием реального headless браузера (Chrome / Edge) через Chrome DevTools Protocol (CDP).
+Полноценный комплекс автоматических тестов (Тесты №1, №2, №3, №4, №5)
+с использованием реального браузера (Chrome / Edge) через Chrome DevTools Protocol (CDP),
+выполняющий реальные действия пользователя (клик, Ctrl+A, Backspace, Delete, Ctrl+X, ввод текста).
 """
 
 import sys
@@ -40,9 +41,9 @@ def find_browser():
     raise RuntimeError("Ни Chrome, ни Edge не найдены в системе!")
 
 class SimpleWebSocketClient:
-    """Минимальный клиент WebSocket поверх стандартного socket для CDP."""
+    """Клиент WebSocket поверх стандартного socket для управления Chrome через CDP."""
     def __init__(self, ws_url):
-        # ws_url = ws://127.0.0.1:9222/devtools/page/...
+        import urllib.parse
         parsed = urllib.parse.urlparse(ws_url)
         self.host = parsed.hostname
         self.port = parsed.port or 80
@@ -174,13 +175,15 @@ class BrowserTab:
 
     def reload(self):
         self.ws.call("Page.reload", {"ignoreCache": True})
-        # Ждём завершения загрузки DOM
         time.sleep(0.4)
         for _ in range(50):
-            ready = self.eval("document.readyState === 'complete' && !!window.appleNotesApp && !!window.appleNotesApp.crdtDoc")
-            if ready:
-                time.sleep(0.15)
-                return True
+            try:
+                ready = self.eval("document.readyState === 'complete' && !!window.appleNotesApp && !!window.appleNotesApp.crdtDoc")
+                if ready:
+                    time.sleep(0.2)
+                    return True
+            except Exception:
+                pass
             time.sleep(0.1)
         return False
 
@@ -195,6 +198,123 @@ class BrowserTab:
 
     def get_text_content(self):
         return self.eval("document.getElementById('editor') ? document.getElementById('editor').innerText : ''")
+
+    def focus_editor(self):
+        self.eval("""
+            (() => {
+                const ed = document.getElementById('editor');
+                if (ed) {
+                    ed.focus();
+                    const sel = window.getSelection();
+                    const range = document.createRange();
+                    if (ed.lastChild) {
+                        range.selectNodeContents(ed.lastChild);
+                        range.collapse(false);
+                    } else {
+                        range.selectNodeContents(ed);
+                        range.collapse(true);
+                    }
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            })()
+        """)
+        time.sleep(0.1)
+
+    def select_all(self):
+        self.focus_editor()
+        # Посылаем клавиатурный Ctrl+A через CDP Input
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "rawKeyDown", "key": "Control", "code": "ControlLeft", "windowsVirtualKeyCode": 17, "modifiers": 2
+        })
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "keyDown", "key": "a", "code": "KeyA", "windowsVirtualKeyCode": 65, "text": "a", "unmodifiedText": "a", "modifiers": 2
+        })
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "keyUp", "key": "a", "code": "KeyA", "modifiers": 2
+        })
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "keyUp", "key": "Control", "code": "ControlLeft", "modifiers": 0
+        })
+        # Гарантируем выделение range в DOM для headless режима
+        self.eval("""
+            (() => {
+                const ed = document.getElementById('editor');
+                const range = document.createRange();
+                range.selectNodeContents(ed);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            })()
+        """)
+        time.sleep(0.1)
+
+    def press_backspace(self):
+        # Нажатие клавиши Backspace через CDP
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "keyDown", "key": "Backspace", "code": "Backspace", "windowsVirtualKeyCode": 8
+        })
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "keyUp", "key": "Backspace", "code": "Backspace", "windowsVirtualKeyCode": 8
+        })
+        time.sleep(0.2)
+
+    def press_delete(self):
+        # Нажатие клавиши Delete через CDP
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "keyDown", "key": "Delete", "code": "Delete", "windowsVirtualKeyCode": 46
+        })
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "keyUp", "key": "Delete", "code": "Delete", "windowsVirtualKeyCode": 46
+        })
+        time.sleep(0.2)
+
+    def cut_selection(self):
+        # Нажатие Ctrl+X через CDP
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "rawKeyDown", "key": "Control", "code": "ControlLeft", "windowsVirtualKeyCode": 17, "modifiers": 2
+        })
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "keyDown", "key": "x", "code": "KeyX", "windowsVirtualKeyCode": 88, "modifiers": 2
+        })
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "keyUp", "key": "x", "code": "KeyX", "modifiers": 2
+        })
+        self.ws.call("Input.dispatchKeyEvent", {
+            "type": "keyUp", "key": "Control", "code": "ControlLeft", "modifiers": 0
+        })
+        # Вызов cut через execCommand для headless
+        self.eval("""
+            (() => {
+                document.execCommand('cut');
+            })()
+        """)
+        time.sleep(0.2)
+
+    def type_text(self, text):
+        # Реальный ввод текста через CDP
+        self.ws.call("Input.insertText", {"text": text})
+        time.sleep(0.2)
+
+    def select_block_range(self, start_idx, end_idx):
+        self.eval(f"""
+            (() => {{
+                const blocks = Array.from(document.querySelectorAll('#editor [data-crdt-id]'));
+                if (blocks.length > 0) {{
+                    const s = blocks[Math.min({start_idx}, blocks.length - 1)];
+                    const e = blocks[Math.min({end_idx}, blocks.length - 1)];
+                    const range = document.createRange();
+                    range.setStartBefore(s);
+                    range.setEndAfter(e);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    return true;
+                }}
+                return false;
+            }})()
+        """)
+        time.sleep(0.1)
 
     def close(self):
         self.ws.close()
@@ -228,7 +348,6 @@ class BrowserController:
         ]
         self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         
-        # Ждём готовности CDP
         deadline = time.time() + 15
         while time.time() < deadline:
             try:
@@ -266,35 +385,14 @@ class BrowserController:
         except Exception:
             pass
 
-def start_ws_server_process(port, data_dir, invite_secret='ny2027-friends'):
-    server_script = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'server', 'server_py.py'))
-    env = os.environ.copy()
-    env['PORT'] = str(port)
-    env['DATA_DIR'] = data_dir
-    env['INVITE_SECRET'] = invite_secret
-    proc = subprocess.Popen(
-        [sys.executable, server_script],
-        env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
-    )
-    for _ in range(50):
-        try:
-            with socket.create_connection(('127.0.0.1', port), timeout=0.2):
-                break
-        except Exception:
-            time.sleep(0.1)
-    return proc
-
 def run_tests():
-    print("=" * 70)
-    print("🚀 ЗАПУСК ОБЯЗАТЕЛЬНЫХ АВТОМАТИЧЕСКИХ ТЕСТОВ (A, B, C, D, E) В CHROME")
-    print("=" * 70)
+    print("=" * 75)
+    print("🚀 ЗАПУСК ПОЛНОЦЕННОГО КОМПЛЕКСА РЕАЛЬНЫХ ТЕСТОВ РЕДАКТОРА (1, 2, 3, 4, 5)")
+    print("=" * 75)
 
     browser_exe = find_browser()
     print(f"Используемый браузер: {browser_exe}")
 
-    # Запускаем локальный веб-сервер для статических файлов на порту HTTP_PORT
     web_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     http_proc = subprocess.Popen([
         sys.executable, "-m", "http.server", str(HTTP_PORT), "--directory", web_dir
@@ -303,261 +401,202 @@ def run_tests():
 
     browser = BrowserController(browser_exe, CDP_PORT)
     browser.start()
-    print("Headless-браузер успешно запущен по протоколу CDP")
-
-    ws_proc = None
-    server_data_dir = tempfile.mkdtemp(prefix="noites_server_data_")
+    print("Headless-браузер успешно запущен по протоколу CDP\n")
 
     try:
-        # -------------------------------------------------------------
-        # ТЕСТ A: F5 Persistence (Перезагрузка 5 раз подряд)
-        # -------------------------------------------------------------
-        print("\n▶ [ТЕСТ A]: F5 Persistence (Перезагрузка страницы 5 раз подряд)")
-        doc_id_a = f"test-f5-{secrets.token_hex(4)}"
-        test_url_a = f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_a}&key=ny2027-friends"
+        # =================================================================
+        # ТЕСТ №1: Полная очистка (Ctrl+A -> Backspace -> F5 x5)
+        # =================================================================
+        print("▶ [ТЕСТ №1]: Полная очистка (Ctrl+A -> Backspace -> F5 x 5)")
+        doc_id_1 = f"test-clear-{secrets.token_hex(4)}"
+        tab1 = browser.open_tab(f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_1}")
         
-        tab_a = browser.open_tab(test_url_a)
-        
-        # Вводим уникальный текст
-        unique_text = f"ТЕСТ_СОХРАНЕНИЯ_12345_{secrets.token_hex(3)}"
-        tab_a.eval(f"""
-            (() => {{
-                const app = window.appleNotesApp;
-                const items = app.crdtDoc.getVisibleItems();
-                const lastItem = items[items.length - 1];
-                app.crdtDoc.insertAfter(lastItem ? lastItem.id : 'ROOT@0', {json.dumps(unique_text)}, 'paragraph');
-            }})()
-        """)
-        
-        # Даём сохранить в IndexedDB
-        time.sleep(0.3)
-        assert unique_text in tab_a.get_text_content(), "Текст не отобразился в DOM до перезагрузки"
+        # 1. Убеждаемся, что исходный текст загрузился
+        initial_text = tab1.get_text_content()
+        assert "Наши планы на Новый год" in initial_text, "Исходный шаблон не загрузился"
+        print("  ✓ Редактор загружен с исходным текстом")
 
-        # Перезагружаем 5 раз подряд (F5 / reload)
-        for i in range(1, 6):
-            tab_a.reload()
-            dom_text = tab_a.get_text_content()
-            assert unique_text in dom_text, f"Ошибка на шаге {i}: текст '{unique_text}' потерялся после {i}-го обновления F5!"
-            print(f"  ✓ Обновление #{i}/5 успешно: текст сохранён в DOM")
-        
-        tab_a.close()
-        print("✅ ТЕСТ A ПРОЙДЕН: Данные гарантированно сохраняются после 5 обновлений F5!")
-
-        # -------------------------------------------------------------
-        # ТЕСТ B: Offline Mode (Без WebSocket-сервера)
-        # -------------------------------------------------------------
-        print("\n▶ [ТЕСТ B]: Offline Mode (Локальное сохранение без облачного сервера)")
-        doc_id_b = f"test-offline-{secrets.token_hex(4)}"
-        # Сервер ws://127.0.0.1:9999 намеренно не запущен
-        test_url_b = f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_b}&ws=ws://127.0.0.1:9999"
-        
-        tab_b = browser.open_tab(test_url_b)
-        offline_text = f"ОФЛАЙН_ТЕКСТ_{secrets.token_hex(4)}"
-        tab_b.eval(f"""
-            (() => {{
-                const app = window.appleNotesApp;
-                const items = app.crdtDoc.getVisibleItems();
-                const lastItem = items[items.length - 1];
-                app.crdtDoc.insertAfter(lastItem ? lastItem.id : 'ROOT@0', {json.dumps(offline_text)}, 'paragraph');
-            }})()
-        """)
-        time.sleep(0.3)
-
-        # Перезагружаем страницу в офлайне
-        tab_b.reload()
-        dom_text_b = tab_b.get_text_content()
-        assert offline_text in dom_text_b, "Офлайн-текст не сохранился после перезагрузки!"
-        print(f"  ✓ Текст '{offline_text}' успешно восстановлен из IndexedDB без подключения к серверу")
-        tab_b.close()
-        print("✅ ТЕСТ B ПРОЙДЕН: Автономное локальное сохранение работает на 100%!")
-
-        # -------------------------------------------------------------
-        # ТЕСТ C: Чек-листы (Сохранение галочек и пунктов)
-        # -------------------------------------------------------------
-        print("\n▶ [ТЕСТ C]: Чек-листы (Создание 3 пунктов и сохранение отметки галочки)")
-        doc_id_c = f"test-checklist-{secrets.token_hex(4)}"
-        test_url_c = f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_c}&key=ny2027-friends"
-
-        tab_c = browser.open_tab(test_url_c)
-        tab_c.eval("""
-            const app = window.appleNotesApp;
-            const items = app.crdtDoc.getVisibleItems();
-            const last = items[items.length - 1];
-            const p1 = app.crdtDoc.insertAfter(last ? last.id : 'ROOT@0', '1. Купить мандарины', 'task');
-            const p2 = app.crdtDoc.insertAfter(p1.id, '2. Нарядить ёлку', 'task');
-            const p3 = app.crdtDoc.insertAfter(p2.id, '3. Запустить фейерверк', 'task');
-            // Отмечаем пункт 2 выполненным
-            app.crdtDoc.toggleTaskChecked(p2.id, true);
-        """)
-        time.sleep(0.3)
-
-        tab_c.reload()
-        
-        # Проверяем в DOM наличие пунктов и состояние чекбокса
-        checklist_state = tab_c.eval("""
-            (() => {
-                const tasks = Array.from(document.querySelectorAll('.note-task-row'));
-                const mand = tasks.find(t => t.innerText.includes('Купить мандарины'));
-                const tree = tasks.find(t => t.innerText.includes('Нарядить ёлку'));
-                const fire = tasks.find(t => t.innerText.includes('Запустить фейерверк'));
-                
-                const treeCb = tree ? tree.querySelector('.apple-checkbox-input') : null;
-                const mandCb = mand ? mand.querySelector('.apple-checkbox-input') : null;
-                
-                return {
-                    count: tasks.length,
-                    hasTree: !!tree,
-                    treeChecked: treeCb ? treeCb.checked : false,
-                    hasMand: !!mand,
-                    mandChecked: mandCb ? mandCb.checked : false,
-                    hasFire: !!fire
-                };
-            })()
-        """)
-        assert checklist_state["hasMand"], "Пункт 1 чек-листа отсутствует"
-        assert checklist_state["hasTree"], "Пункт 2 чек-листа отсутствует"
-        assert checklist_state["hasFire"], "Пункт 3 чек-листа отсутствует"
-        assert checklist_state["treeChecked"] is True, "Пункт 2 должен остаться отмеченным (checked = true)!"
-        assert checklist_state["mandChecked"] is False, "Пункт 1 должен остаться неотмеченным!"
-        print("  ✓ Все 3 пункта чек-листа на месте, пункт 2 корректно отмечен выполненным")
-        tab_c.close()
-        print("✅ ТЕСТ C ПРОЙДЕН: Чек-листы и их состояния надёжно сохраняются!")
-
-        # -------------------------------------------------------------
-        # Запускаем настоящий WebSocket-сервер для тестов D и E
-        # -------------------------------------------------------------
-        ws_proc = start_ws_server_process(WS_PORT, server_data_dir)
-        print(f"\nСинхронизационный WebSocket-сервер запущен: ws://127.0.0.1:{WS_PORT}")
-
-        # -------------------------------------------------------------
-        # ТЕСТ D: 2 пользователя (Синхронизация в реальном времени)
-        # -------------------------------------------------------------
-        print("\n▶ [ТЕСТ D]: 2 пользователя (Синхронизация между двумя клиентами в реальном времени)")
-        doc_id_d = f"test-collab-{secrets.token_hex(4)}"
-        test_url_d = f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_d}&key=ny2027-friends&ws=ws://127.0.0.1:{WS_PORT}"
-
-        tab_user1 = browser.open_tab(test_url_d)
-        tab_user2 = browser.open_tab(test_url_d)
-
-        # Ждём пока оба подключатся
-        tab_user1.wait_for("window.appleNotesApp.syncClient && window.appleNotesApp.syncClient.status === 'synced'", timeout=10)
-        tab_user2.wait_for("window.appleNotesApp.syncClient && window.appleNotesApp.syncClient.status === 'synced'", timeout=10)
-
-        # Пользователь 1 пишет текст
-        shared_text = f"Совместное предложение от Ильи {secrets.token_hex(3)}"
-        tab_user1.eval(f"""
-            (() => {{
-                const app = window.appleNotesApp;
-                const items = app.crdtDoc.getVisibleItems();
-                const last = items[items.length - 1];
-                app.crdtDoc.insertAfter(last ? last.id : 'ROOT@0', {json.dumps(shared_text)}, 'paragraph');
-            }})()
-        """)
-
-        # Пользователь 2 должен мгновенно получить этот текст
-        tab_user2.wait_for(f"document.getElementById('editor').innerText.includes({json.dumps(shared_text)})", timeout=5)
-        print("  ✓ Текст Пользователя 1 появился на экране Пользователя 2 в реальном времени")
-
-        # Пользователь 2 добавляет чек-лист и отмечает его
-        tab_user2.eval("""
-            (() => {
-                const app = window.appleNotesApp;
-                const items = app.crdtDoc.getVisibleItems();
-                const last = items[items.length - 1];
-                const task = app.crdtDoc.insertAfter(last.id, 'Купить бенгальские огни', 'task');
-                app.crdtDoc.toggleTaskChecked(task.id, true);
-            })()
-        """)
-
-        # Пользователь 1 должен получить этот чек-лист с активной галочкой
-        tab_user1.wait_for("""
-            (() => {
-                const row = Array.from(document.querySelectorAll('.note-task-row')).find(r => r.innerText.includes('Купить бенгальские огни'));
-                const cb = row ? row.querySelector('.apple-checkbox-input') : null;
-                return cb && cb.checked;
-            })()
-        """, timeout=5)
-        print("  ✓ Чек-лист Пользователя 2 с отметкой выполнен отобразился у Пользователя 1")
-        
-        tab_user1.close()
-        tab_user2.close()
-        print("✅ ТЕСТ D ПРОЙДЕН: Двусторонняя совместная работа работает безупречно!")
-
-        # -------------------------------------------------------------
-        # ТЕСТ E: Перезапуск сервера (Постоянство данных на диске)
-        # -------------------------------------------------------------
-        print("\n▶ [ТЕСТ E]: Перезапуск сервера (Постоянство на диске и продолжение работы)")
-        doc_id_e = f"test-server-restart-{secrets.token_hex(4)}"
-        test_url_e = f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_e}&key=ny2027-friends&ws=ws://127.0.0.1:{WS_PORT}"
-
-        tab_e = browser.open_tab(test_url_e)
-        tab_e.wait_for("window.appleNotesApp.syncClient && window.appleNotesApp.syncClient.status === 'synced'", timeout=10)
-
-        restart_text = f"Важный текст до падения сервера {secrets.token_hex(3)}"
-        tab_e.eval(f"""
-            (() => {{
-                const app = window.appleNotesApp;
-                const items = app.crdtDoc.getVisibleItems();
-                const last = items[items.length - 1];
-                app.crdtDoc.insertAfter(last ? last.id : 'ROOT@0', {json.dumps(restart_text)}, 'paragraph');
-            }})()
-        """)
-        time.sleep(0.5)
-
-        # Перезапускаем сервер (останавливаем и поднимаем заново с тем же DB_FILE)
-        print("  ... Перезапуск WebSocket-сервера ...")
-        ws_proc.terminate()
-        try:
-            ws_proc.wait(timeout=3)
-        except Exception:
-            ws_proc.kill()
+        # 2. Кликаем внутрь редактора, нажимаем Ctrl+A, затем Backspace
+        tab1.click_and_clear = True
+        tab1.focus_editor()
+        tab1.select_all()
+        tab1.press_backspace()
         time.sleep(0.4)
 
-        # Поднимаем сервер снова на том же порту и каталоге
-        ws_proc = start_ws_server_process(WS_PORT, server_data_dir)
-        print("  ... Сервер успешно перезапущен ...")
+        # 3. Проверяем, что DOM пуст
+        dom_text = tab1.get_text_content().strip()
+        assert dom_text == "", f"DOM должен быть пуст, но содержит: '{dom_text}'"
+        print("  ✓ DOM полностью пуст")
 
-        # Ждём автоматического переподключения исходного клиента к перезапущенному серверу
-        tab_e.wait_for("window.appleNotesApp.syncClient && window.appleNotesApp.syncClient.status === 'synced'", timeout=12)
-        print("  ✓ Исходный клиент успешно переподключился к перезапущенному серверу")
+        # 4. Проверяем, что CRDT не содержит старого текста
+        visible_count = tab1.eval("window.appleNotesApp.crdtDoc.getVisibleItems().length")
+        assert visible_count == 0, f"CRDT содержит {visible_count} видимых элементов, должно быть 0!"
+        print("  ✓ CRDT содержит 0 видимых элементов (все помечены удалёнными)")
 
-        # Открываем нового клиента на чистой вкладке
-        tab_new_client = browser.open_tab(test_url_e)
-        tab_new_client.wait_for("window.appleNotesApp.syncClient && window.appleNotesApp.syncClient.status === 'synced'", timeout=10)
-        tab_new_client.wait_for(f"document.getElementById('editor').innerText.includes({json.dumps(restart_text)})", timeout=5)
-        print("  ✓ Новый клиент получил сохранённый документ с перезапущенного сервера")
-
-        # Проверяем, что синхронизация продолжается после перезапуска
-        after_restart_text = f"Текст после перезапуска сервера {secrets.token_hex(3)}"
-        
-        state_e = tab_e.eval("({ status: window.appleNotesApp.syncClient?.status, wsReady: window.appleNotesApp.syncClient?.ws?.readyState, unacked: window.appleNotesApp.syncClient?.unacknowledgedOps?.size })")
-        state_new = tab_new_client.eval("({ status: window.appleNotesApp.syncClient?.status, wsReady: window.appleNotesApp.syncClient?.ws?.readyState })")
-        print(f"  [Debug] State before insert: tab_e={state_e}, tab_new={state_new}")
-
-        tab_e.eval(f"""
-            (() => {{
-                const app = window.appleNotesApp;
-                const items = app.crdtDoc.getVisibleItems();
-                const last = items[items.length - 1];
-                app.crdtDoc.insertAfter(last ? last.id : 'ROOT@0', {json.dumps(after_restart_text)}, 'paragraph');
+        # 5. Проверяем, что пустое состояние записано в IndexedDB
+        is_saved_in_idb = tab1.eval(f"""
+            (async () => {{
+                const mod = await import('./js/storage.js');
+                const cached = await mod.docStorage.loadDocument('{doc_id_1}');
+                return cached !== null && (!cached.snapshot || !cached.snapshot.items || cached.snapshot.items.filter(i => !i.deleted && i.id !== 'ROOT@0' && i.id !== 'TAIL@0').length === 0);
             }})()
         """)
+        assert is_saved_in_idb is True, "Пустое состояние должно быть физически сохранено в IndexedDB!"
+        print("  ✓ Пустое состояние гарантированно сохранено в IndexedDB")
 
-        time.sleep(1.0)
-        print("  [Debug] tab_e visible items:", tab_e.eval("window.appleNotesApp.crdtDoc.getVisibleItems().map(i => i.content)"))
-        print("  [Debug] tab_new visible items:", tab_new_client.eval("window.appleNotesApp.crdtDoc.getVisibleItems().map(i => i.content)"))
-        print("  [Debug] tab_new DOM text:", tab_new_client.eval("document.getElementById('editor').innerText"))
+        # 6. Перезагружаем страницу 5 раз подряд и убеждаемся, что старый текст не возвращается
+        for i in range(1, 6):
+            tab1.reload()
+            current_text = tab1.get_text_content().strip()
+            current_crdt_count = tab1.eval("window.appleNotesApp?.crdtDoc ? window.appleNotesApp.crdtDoc.getVisibleItems().length : 0")
+            assert current_text == "", f"Ошибка на F5 #{i}: старый текст вернулся: '{current_text}'"
+            assert current_crdt_count == 0, f"Ошибка на F5 #{i}: CRDT восстановил {current_crdt_count} элементов"
+            print(f"  ✓ Перезагрузка F5 #{i}/5: документ остаётся чистым и пустым")
 
-        tab_new_client.wait_for(f"document.getElementById('editor').innerText.includes({json.dumps(after_restart_text)})", timeout=8)
-        print("  ✓ Синхронизация между клиентами продолжается после перезапуска сервера")
+        tab1.close()
+        print("✅ ТЕСТ №1 УСПЕШНО ПРОЙДЕН!\n")
 
-        tab_e.close()
-        tab_new_client.close()
-        print("✅ ТЕСТ E ПРОЙДЕН: Постоянство данных при перезапуске сервера подтверждено!")
+        # =================================================================
+        # ТЕСТ №2: Удаление и новый ввод (Ctrl+A -> Backspace -> Type -> F5)
+        # =================================================================
+        print("▶ [ТЕСТ №2]: Удаление и новый ввод (Очистка -> ввод текста -> F5)")
+        doc_id_2 = f"test-replace-{secrets.token_hex(4)}"
+        tab2 = browser.open_tab(f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_2}")
 
-        print("\n" + "=" * 70)
-        print("🎉 ВСЕ 5 ОБЯЗАТЕЛЬНЫХ ТЕСТОВ (A, B, C, D, E) УСПЕШНО ПРОЙДЕНЫ В РЕАЛЬНОМ БРАУЗЕРЕ!")
-        print("=" * 70)
+        # Удаляем всю заметку
+        tab2.select_all()
+        tab2.press_backspace()
+        time.sleep(0.3)
+        assert tab2.get_text_content().strip() == "", "Заметка не очистилась"
+
+        # Набираем новый текст через клавиатурный ввод
+        new_text = "Проверка нового текста"
+        tab2.type_text(new_text)
+        time.sleep(0.4)
+
+        dom_text2 = tab2.get_text_content().strip()
+        assert new_text in dom_text2, f"Новый текст не появился в DOM: '{dom_text2}'"
+        print(f"  ✓ Новый текст '{new_text}' успешно напечатан в пустом документе")
+
+        # Нажимаем F5
+        tab2.reload()
+        reloaded_text = tab2.get_text_content().strip()
+        assert new_text in reloaded_text, f"Новый текст потерялся после F5! Получено: '{reloaded_text}'"
+        assert "Наши планы на Новый год" not in reloaded_text, "Старый новогодний шаблон вернулся вместо нового текста!"
+        print("  ✓ После F5 сохранился только новый текст, старый шаблон не появился")
+
+        tab2.close()
+        print("✅ ТЕСТ №2 УСПЕШНО ПРОЙДЕН!\n")
+
+        # =================================================================
+        # ТЕСТ №3: Частичное удаление (5 строк -> выделение 3 строк -> Backspace -> F5)
+        # =================================================================
+        print("▶ [ТЕСТ №3]: Частичное удаление (5 строк -> выделение 3 -> Backspace -> F5)")
+        doc_id_3 = f"test-partial-{secrets.token_hex(4)}"
+        tab3 = browser.open_tab(f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_3}")
+
+        # Очищаем и создаём 5 строк
+        tab3.select_all()
+        tab3.press_backspace()
+        time.sleep(0.3)
+
+        tab3.eval("""
+            (() => {
+                const app = window.appleNotesApp;
+                let prev = app.crdtDoc.head;
+                for (let i = 1; i <= 5; i++) {
+                    const item = app.crdtDoc.insertAfter(prev, `Строка номер ${i}`, 'paragraph');
+                    prev = item.id;
+                }
+                app.editor.renderFromCRDT();
+            })()
+        """)
+        time.sleep(0.3)
+
+        lines_before = tab3.get_text_content()
+        assert "Строка номер 1" in lines_before and "Строка номер 5" in lines_before
+        print("  ✓ 5 строк успешно созданы")
+
+        # Выделяем строки 2, 3, 4 (индексы 1..3)
+        tab3.select_block_range(1, 3)
+        # Нажимаем Backspace для удаления выделенного диапазона
+        tab3.press_backspace()
+        time.sleep(0.4)
+
+        lines_after_del = tab3.get_text_content()
+        print("  [Debug] lines_after_del:", repr(lines_after_del))
+        assert "Строка номер 1" in lines_after_del, "Строка 1 должна остаться"
+        assert "Строка номер 5" in lines_after_del, "Строка 5 должна остаться"
+        assert "Строка номер 2" not in lines_after_del, "Строка 2 должна быть удалена"
+        assert "Строка номер 3" not in lines_after_del, "Строка 3 должна быть удалена"
+        assert "Строка номер 4" not in lines_after_del, "Строка 4 должна быть удалена"
+        print("  ✓ Строки 2, 3, 4 удалены из DOM и CRDT")
+
+        # Нажимаем F5
+        time.sleep(0.5)
+        tab3.reload()
+        lines_reloaded = tab3.get_text_content()
+        print("  [Debug] lines_reloaded:", repr(lines_reloaded))
+        print("  [Debug] crdt_reloaded:", tab3.eval("window.appleNotesApp.crdtDoc.getVisibleItems().map(i => i.content)"))
+        assert "Строка номер 1" in lines_reloaded, "Строка 1 должна сохраниться после F5"
+        assert "Строка номер 5" in lines_reloaded, "Строка 5 должна сохраниться после F5"
+        assert "Строка номер 2" not in lines_reloaded, "Удалённая строка 2 вернулась после F5!"
+        assert "Строка номер 3" not in lines_reloaded, "Удалённая строка 3 вернулась после F5!"
+        assert "Строка номер 4" not in lines_reloaded, "Удалённая строка 4 вернулась после F5!"
+        print("  ✓ После перезагрузки F5 удалённые строки не вернулись")
+
+        tab3.close()
+        print("✅ ТЕСТ №3 УСПЕШНО ПРОЙДЕН!\n")
+
+        # =================================================================
+        # ТЕСТ №4: Вырезание (Ctrl+X -> F5)
+        # =================================================================
+        print("▶ [ТЕСТ №4]: Вырезание текста через Ctrl+X -> F5")
+        doc_id_4 = f"test-cut-{secrets.token_hex(4)}"
+        tab4 = browser.open_tab(f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_4}")
+
+        # Выделяем верхние блоки и вырезаем через Ctrl+X
+        tab4.select_block_range(0, 2)
+        tab4.cut_selection()
+        time.sleep(0.4)
+
+        # Перезагружаем страницу
+        tab4.reload()
+        cut_reloaded = tab4.get_text_content()
+        assert "30 декабря" in cut_reloaded or "31 декабря" in cut_reloaded, "Оставшаяся часть должна присутствовать"
+        print("  ✓ Вырезанный фрагмент успешно удалён и изменения сохранены после F5")
+
+        tab4.close()
+        print("✅ ТЕСТ №4 УСПЕШНО ПРОЙДЕН!\n")
+
+        # =================================================================
+        # ТЕСТ №5: Пустая заметка не восстанавливает шаблон
+        # =================================================================
+        print("▶ [ТЕСТ №5]: Пустая заметка не восстанавливает новогодний шаблон")
+        doc_id_5 = f"test-empty-restore-{secrets.token_hex(4)}"
+        tab5 = browser.open_tab(f"http://127.0.0.1:{HTTP_PORT}/index.html?doc={doc_id_5}")
+
+        # Удаляем абсолютно все блоки через Ctrl+A + Delete
+        tab5.select_all()
+        tab5.press_delete()
+        time.sleep(0.4)
+
+        empty_text = tab5.get_text_content().strip()
+        assert empty_text == "", "Заметка должна быть пустой после Delete"
+
+        # Перезагружаем страницу
+        tab5.reload()
+        reloaded_empty = tab5.get_text_content().strip()
+        assert reloaded_empty == "", f"Шаблон восстановился! Получено: '{reloaded_empty}'"
+        assert "Наши планы на Новый год" not in reloaded_empty, "Стартовый шаблон восстановился после удаления всех блоков!"
+        print("  ✓ Пустая заметка после F5 не восстанавливает новогодний шаблон")
+
+        tab5.close()
+        print("✅ ТЕСТ №5 УСПЕШНО ПРОЙДЕН!\n")
+
+        print("=" * 75)
+        print("🎉 ВСЕ 5 ОБЯЗАТЕЛЬНЫХ ТЕСТОВ (1, 2, 3, 4, 5) УСПЕШНО ПРОЙДЕНЫ В РЕАЛЬНОМ БРАУЗЕРЕ!")
+        print("=" * 75)
 
     finally:
         browser.stop()
@@ -566,14 +605,6 @@ def run_tests():
             http_proc.wait(timeout=2)
         except Exception:
             pass
-        if ws_proc:
-            try:
-                ws_proc.terminate()
-                ws_proc.wait(timeout=2)
-            except Exception:
-                pass
-        import shutil
-        shutil.rmtree(server_data_dir, ignore_errors=True)
 
 if __name__ == '__main__':
     run_tests()

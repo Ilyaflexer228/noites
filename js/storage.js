@@ -89,6 +89,7 @@ class DocStorage {
           data: snapshot, // Для обратной совместимости со старыми модулями
           textContent: textContent,
           updatedAt: Date.now(),
+          initialized: true,
         };
 
         const req = store.put(record);
@@ -116,6 +117,7 @@ class DocStorage {
       localStorage.setItem(`doc_${docId}`, serialized);
       localStorage.setItem(`doc_txt_${docId}`, textContent);
       localStorage.setItem(`doc_time_${docId}`, Date.now().toString());
+      localStorage.setItem(`doc_init_${docId}`, 'true');
 
       // Создаём редкую резервную копию (раз в 10 минут)
       const lastBackup = localStorage.getItem(`backup_last_${docId}`);
@@ -203,6 +205,7 @@ class DocStorage {
       data: snapshot, // Для обратной совместимости
       textContent: chosen.textContent || '',
       updatedAt: chosen.updatedAt || Date.now(),
+      initialized: true,
     };
   }
 

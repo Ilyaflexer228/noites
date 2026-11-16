@@ -198,6 +198,46 @@ export class AppleNotesEditor {
     this.container.addEventListener('input', (e) => this.handleInput(e));
     this.container.addEventListener('keydown', (e) => this.handleKeyDown(e));
 
+    this.container.addEventListener('beforeinput', (e) => {
+      if (this.isComposing || this.isRenderingRemote) return;
+      if (
+        e.inputType === 'deleteContentBackward' ||
+        e.inputType === 'deleteContentForward' ||
+        e.inputType === 'deleteByCut'
+      ) {
+        const sel = window.getSelection();
+        if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
+          if (this.isAllSelected(sel)) {
+            e.preventDefault();
+            this.clearEntireDocument();
+          }
+        }
+      }
+    });
+
+    this.container.addEventListener('cut', (e) => {
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
+        if (this.isAllSelected(sel)) {
+          if (e.clipboardData) {
+            e.clipboardData.setData('text/plain', this.container.innerText);
+          }
+          e.preventDefault();
+          this.clearEntireDocument();
+          return;
+        }
+      }
+      setTimeout(() => {
+        this.reconcileDOMWithCRDT();
+      }, 0);
+    });
+
+    this.container.addEventListener('paste', () => {
+      setTimeout(() => {
+        this.reconcileDOMWithCRDT();
+      }, 0);
+    });
+
     this.container.addEventListener('change', (e) => {
       const toggleTarget = e.target.closest('[data-crdt-toggle]');
       if (toggleTarget) {
@@ -228,25 +268,7 @@ export class AppleNotesEditor {
 
   handleInput(e) {
     if (this.isComposing || this.isRenderingRemote) return;
-
-    const sel = window.getSelection();
-    if (!sel || !sel.anchorNode) return;
-
-    const block = this.findEnclosingBlock(sel.anchorNode);
-    if (!block || !block.dataset.crdtId) return;
-
-    const crdtId = block.dataset.crdtId;
-    let newText = '';
-
-    if (block.classList.contains('note-task-row')) {
-      const textDiv = block.querySelector('.note-task-text');
-      newText = textDiv ? textDiv.innerText.replace(/\n$/, '') : '';
-    } else {
-      newText = block.innerText.replace(/\n$/, '');
-    }
-
-    // Отправляем text_update в CRDT
-    this.crdtDoc.updateText(crdtId, newText);
+    this.reconcileDOMWithCRDT();
   }
 
   handleKeyDown(e) {
@@ -281,74 +303,234 @@ export class AppleNotesEditor {
       return;
     }
 
+    // Ctrl+A — выделение всей заметки
+    if (modKey && e.key.toLowerCase() === 'a') {
+      return;
+    }
+
     if (e.key === 'Enter') {
       e.preventDefault();
       this.handleEnterKey();
       return;
     }
 
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      this.handleDeleteKey(e);
+      return;
+    }
+  }
+
+  handleDeleteKey(e) {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+
+    // СЛУЧАЙ 1: Пользователь выделил диапазон текста (Ctrl+A или несколько строк)
+    if (!sel.isCollapsed) {
+      const range = sel.getRangeAt(0);
+      const allBlocks = this.getDOMBlocks();
+      const selectedBlocks = allBlocks.filter((b) => range.intersectsNode(b));
+
+      // Если выделен весь документ (Ctrl+A)
+      if (allBlocks.length > 0 && (selectedBlocks.length === allBlocks.length || this.isAllSelected(sel))) {
+        e.preventDefault();
+        this.clearEntireDocument();
+        return;
+      }
+
+      // Если выделение охватывает несколько блоков
+      if (selectedBlocks.length > 1) {
+        e.preventDefault();
+        this.deleteSelectedBlocks(range, selectedBlocks);
+        return;
+      }
+
+      // Выделение внутри одного блока: даём браузеру удалить выделенный текст,
+      // а в handleInput reconcile обновит текст блока в CRDT!
+      return;
+    }
+
+    // СЛУЧАЙ 2: Обычный Backspace курсором (caret) без выделения
     if (e.key === 'Backspace') {
-      this.handleBackspaceKey(e);
-    }
-  }
-
-  handleEnterKey() {
-    const sel = window.getSelection();
-    if (!sel || !sel.rangeCount) return;
-
-    const block = this.findEnclosingBlock(sel.anchorNode);
-    let leftId = null;
-    let nextType = 'text';
-
-    if (block && block.dataset.crdtId) {
-      leftId = NodeID.fromString(block.dataset.crdtId);
-      if (block.classList.contains('note-task-row')) {
-        nextType = 'task';
-      } else if (block.classList.contains('note-bullet')) {
-        nextType = 'bullet';
-      } else if (block.classList.contains('note-number')) {
-        nextType = 'number';
+      const block = this.findEnclosingBlock(sel.anchorNode);
+      if (!block || !block.dataset.crdtId) {
+        if (this.container.children.length === 0 || this.container.innerText.trim() === '') {
+          e.preventDefault();
+          this.clearEntireDocument();
+        }
+        return;
       }
-    } else {
-      leftId = this.crdtDoc.head;
+
+      const text = this.getBlockText(block);
+      // Если блок пуст — удаляем его из CRDT и DOM
+      if (text === '') {
+        e.preventDefault();
+        const prevBlock = block.previousElementSibling;
+        const itemId = block.dataset.crdtId;
+        this.crdtDoc.deleteItem(itemId);
+        block.remove();
+
+        if (prevBlock) {
+          this.focusElement(prevBlock, true);
+        } else {
+          this.container.focus();
+        }
+        this.reconcileDOMWithCRDT();
+      }
     }
-
-    const newItem = this.crdtDoc.insertAfter(leftId, '', nextType, false);
-    const newEl = this.createDOMElementForOp({
-      id: newItem.id.toString(),
-      content: '',
-      itemType: nextType,
-      checked: false,
-    });
-
-    if (block && block.parentNode === this.container) {
-      block.after(newEl);
-    } else {
-      this.container.appendChild(newEl);
-    }
-
-    this.focusElement(newEl);
   }
 
-  handleBackspaceKey(e) {
-    const sel = window.getSelection();
-    if (!sel || !sel.rangeCount) return;
+  deleteSelectedBlocks(range, selectedBlocks) {
+    if (!selectedBlocks || selectedBlocks.length === 0) return;
 
-    const block = this.findEnclosingBlock(sel.anchorNode);
-    if (!block || !block.dataset.crdtId) return;
+    const allBlocks = this.getDOMBlocks();
+    if (selectedBlocks.length === allBlocks.length) {
+      this.clearEntireDocument();
+      return;
+    }
 
-    const text = block.innerText.trim();
-    if (text === '' && this.container.children.length > 1) {
-      e.preventDefault();
-      const prevBlock = block.previousElementSibling;
-      const itemId = NodeID.fromString(block.dataset.crdtId);
-      this.crdtDoc.deleteItem(itemId);
+    // Удаляем промежуточные блоки полностью
+    const firstBlock = selectedBlocks[0];
+    const lastBlock = selectedBlocks[selectedBlocks.length - 1];
+    const intermediate = selectedBlocks.slice(1, -1);
+
+    for (const block of intermediate) {
+      if (block.dataset.crdtId) {
+        this.crdtDoc.deleteItem(block.dataset.crdtId);
+      }
       block.remove();
+    }
 
-      if (prevBlock) {
-        this.focusElement(prevBlock, true);
+    // Удаляем выделенный фрагмент через range.deleteContents()
+    try {
+      range.deleteContents();
+    } catch (err) {
+      console.warn('Range deleteContents warning:', err);
+    }
+
+    // Проверяем remaining firstBlock и lastBlock
+    if (firstBlock && firstBlock.isConnected) {
+      const remainingText = this.getBlockText(firstBlock);
+      this.crdtDoc.updateText(firstBlock.dataset.crdtId, remainingText);
+    }
+
+    if (lastBlock && lastBlock.isConnected && lastBlock !== firstBlock) {
+      const remainingText = this.getBlockText(lastBlock);
+      if (remainingText === '') {
+        this.crdtDoc.deleteItem(lastBlock.dataset.crdtId);
+        lastBlock.remove();
+      } else {
+        this.crdtDoc.updateText(lastBlock.dataset.crdtId, remainingText);
       }
     }
+
+    this.reconcileDOMWithCRDT();
+  }
+
+  clearEntireDocument() {
+    // 1. Помечаем все видимые элементы CRDT как удалённые
+    const visible = this.crdtDoc.getVisibleItems();
+    for (const item of visible) {
+      this.crdtDoc.deleteItem(item.id);
+    }
+
+    // 2. Очищаем DOM контейнера
+    this.container.innerHTML = '';
+
+    // 3. Устанавливаем фокус на контейнер
+    this.container.focus();
+  }
+
+  reconcileDOMWithCRDT() {
+    if (this.isRenderingRemote || this.isComposing) return;
+
+    const visibleItems = this.crdtDoc.getVisibleItems();
+    const crdtMap = new Map(visibleItems.map((item) => [item.id.toString(), item]));
+
+    const domBlocks = this.getDOMBlocks();
+    const domIds = new Set(domBlocks.map((b) => b.dataset.crdtId));
+
+    // СЛУЧАЙ 1: В DOM нет блоков с data-crdt-id
+    if (domBlocks.length === 0) {
+      const text = this.container.innerText.trim();
+      if (text.length === 0) {
+        // Документ полностью пуст -> помечаем все оставшиеся элементы CRDT удалёнными
+        for (const item of visibleItems) {
+          this.crdtDoc.deleteItem(item.id);
+        }
+        return;
+      } else {
+        // Пользователь напечатал новый текст в пустом редакторе
+        for (const item of visibleItems) {
+          this.crdtDoc.deleteItem(item.id);
+        }
+        const cleanText = this.container.innerText.replace(/\n$/, '');
+        const newItem = this.crdtDoc.insertAfter(this.crdtDoc.head, cleanText, 'text');
+
+        const p = document.createElement('p');
+        p.className = 'note-paragraph';
+        p.dataset.crdtId = newItem.id.toString();
+        p.textContent = cleanText;
+        this.container.innerHTML = '';
+        this.container.appendChild(p);
+        this.focusElement(p, true);
+        return;
+      }
+    }
+
+    // СЛУЧАЙ 2: Некоторые элементы CRDT были удалены из DOM
+    for (const item of visibleItems) {
+      if (!domIds.has(item.id.toString())) {
+        this.crdtDoc.deleteItem(item.id);
+      }
+    }
+
+    // СЛУЧАЙ 3: Обновляем текст существующих блоков
+    for (const block of domBlocks) {
+      const crdtId = block.dataset.crdtId;
+      const crdtItem = crdtMap.get(crdtId);
+      if (crdtItem) {
+        const currentText = this.getBlockText(block);
+        if (currentText !== crdtItem.content) {
+          this.crdtDoc.updateText(crdtId, currentText);
+        }
+      }
+    }
+  }
+
+  getDOMBlocks() {
+    return Array.from(this.container.querySelectorAll('[data-crdt-id]'));
+  }
+
+  getBlockText(block) {
+    if (!block) return '';
+    if (block.classList.contains('note-task-row')) {
+      const textDiv = block.querySelector('.note-task-text');
+      return textDiv ? textDiv.innerText.replace(/\n$/, '') : '';
+    }
+    return block.innerText.replace(/\n$/, '');
+  }
+
+  isAllSelected(sel) {
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return false;
+    const selText = sel.toString().trim();
+    const docText = this.container.innerText.trim();
+    if (docText.length > 0 && selText.length >= docText.length) {
+      return true;
+    }
+    const range = sel.getRangeAt(0);
+    const all = this.getDOMBlocks();
+    if (all.length > 0) {
+      const selected = all.filter((b) => range.intersectsNode(b));
+      if (selected.length === all.length) {
+        return true;
+      }
+    }
+    if (range.startContainer === this.container && range.startOffset === 0) {
+      if (range.endContainer === this.container && range.endOffset >= this.container.childNodes.length) {
+        return true;
+      }
+    }
+    return false;
   }
 
   formatCurrentBlock(type) {
@@ -386,22 +568,28 @@ export class AppleNotesEditor {
   }
 
   focusElement(el, atEnd = false) {
+    if (!el) {
+      this.container.focus();
+      return;
+    }
     const target = el.querySelector('.note-task-text') || el;
     target.focus();
 
-    const sel = window.getSelection();
-    const range = document.createRange();
+    try {
+      const sel = window.getSelection();
+      const range = document.createRange();
 
-    if (atEnd && target.lastChild) {
-      range.selectNodeContents(target);
-      range.collapse(false);
-    } else {
-      range.selectNodeContents(target);
-      range.collapse(true);
-    }
+      if (atEnd && target.lastChild) {
+        range.selectNodeContents(target);
+        range.collapse(false);
+      } else {
+        range.selectNodeContents(target);
+        range.collapse(true);
+      }
 
-    sel.removeAllRanges();
-    sel.addRange(range);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch (e) {}
   }
 
   saveSelection() {

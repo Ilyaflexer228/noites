@@ -73,12 +73,15 @@ class App {
 
     // 1. НАДЁЖНОЕ ВОССТАНОВЛЕНИЕ: Чтение из IndexedDB и localStorage
     const cached = await docStorage.loadDocument(this.urlParams.docId);
-    const savedSnapshot = cached ? (cached.snapshot || cached.data || (cached.items ? cached : null)) : null;
 
-    if (savedSnapshot && savedSnapshot.items && savedSnapshot.items.length > 0) {
-      this.crdtDoc.loadSnapshot(savedSnapshot);
+    if (cached) {
+      // Документ уже существовал и был сохранён ранее (включая намеренно пустые заметки)
+      const savedSnapshot = cached.snapshot || cached.data || (cached.items ? cached : null);
+      if (savedSnapshot) {
+        this.crdtDoc.loadSnapshot(savedSnapshot);
+      }
     } else {
-      // Инициализируем стартовым шаблоном ТОЛЬКО если документ действительно пуст
+      // Стартовый шаблон создаётся ТОЛЬКО при самом первом создании нового документа
       this.crdtDoc.initializeWithTemplate();
       await this.saveDocumentLocally();
     }
